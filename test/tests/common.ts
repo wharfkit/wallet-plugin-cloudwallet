@@ -5,8 +5,8 @@ import {WalletPluginWAX} from '$lib'
 import {mockFetch} from '$test/utils/mock-fetch'
 
 const mockChainDefinition = {
-    id: '73e4385a2708e6d7048834fbc1079f2fabb17b3c125b146af438971e90716c4d',
-    url: 'https://jungle4.greymass.com',
+    id: '1064487b3cd1a897ce03ae5b6a865651747e2e152090f99c1d19d44e01aea5a4',
+    url: 'https://wax.greymass.com',
 }
 
 const mockPermissionLevel = PermissionLevel.from('wharfkit1115@test')
