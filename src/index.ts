@@ -1,72 +1,23 @@
 import {
     LoginContext,
-    NameType,
     PermissionLevel,
-    PublicKeyType,
     ResolvedSigningRequest,
-    Signature,
+    Serializer,
+    SigningRequest,
     TransactContext,
+    Transaction,
     WalletPlugin,
     WalletPluginConfig,
-    WalletPluginLoginOptions,
     WalletPluginLoginResponse,
     WalletPluginMetadata,
+    WalletPluginSignResponse,
 } from '@wharfkit/session'
-
-interface WAXCloudWalletResponse {
-    autoLogin: boolean
-    pubKeys: PublicKeyType[]
-    userAccount: NameType
-    verified: boolean
-    whitelistedContracts: []
-}
-
-export async function doLogin(
-    urlString: URL | string,
-    timeout = 300000
-): Promise<WAXCloudWalletResponse> {
-    const url = new URL(urlString)
-
-    const popup = await window.open(url, 'WalletPluginWAXPopup', 'height=800,width=600')
-    if (!popup) {
-        throw new Error('Unable to open popup window')
-    }
-
-    return new Promise<WAXCloudWalletResponse>((resolve, reject) => {
-        // Automatically cancel request after 5 minutes to cleanup windows/promises
-        const autoCancel = setTimeout(() => {
-            popup.close()
-            window.removeEventListener('message', eventListener)
-            reject(new Error(`Login request has timed out after ${timeout / 1000} seconds.`))
-        }, timeout)
-
-        // Event listener for WCW Response
-        async function eventListener(event: MessageEvent) {
-            // Message source validation
-            const eventOrigin = new URL(event.origin)
-            const validOrigin = eventOrigin.origin === url.origin
-            const validSource = event.source === popup
-            const validObject = typeof event.data === 'object'
-            if (!validObject || !validOrigin || !validSource) {
-                return
-            }
-
-            // Process incoming message
-            try {
-                resolve(event.data)
-            } catch (e) {
-                reject(e)
-            } finally {
-                // Cleanup
-                window.removeEventListener('message', eventListener)
-                clearTimeout(autoCancel)
-            }
-        }
-
-        // Add event listener awaiting WCW Response
-        window.addEventListener('message', eventListener)
-    })
-}
+import {
+    loginPopup,
+    transactPopup,
+    WAXCloudWalletLoginResponse,
+    WAXCloudWalletSigningResponse,
+} from './wcw'
 
 export class WalletPluginWAX implements WalletPlugin {
     /**
@@ -107,22 +58,22 @@ export class WalletPluginWAX implements WalletPlugin {
      * @param options WalletPluginLoginOptions
      * @returns Promise<WalletPluginLoginResponse>
      */
-    async login(
-        context: LoginContext,
-        options: WalletPluginLoginOptions
-    ): Promise<WalletPluginLoginResponse> {
+    async login(context: LoginContext): Promise<WalletPluginLoginResponse> {
         if (!context.chain) {
             throw new Error('A chain must be selected to login with.')
         }
 
-        const response = await doLogin(`${this.url}/cloud-wallet/login/`)
+        // TODO: check if we can auto login and modify the way it acts (no popup)
+        const response: WAXCloudWalletLoginResponse = await loginPopup(
+            `${this.url}/cloud-wallet/login/`
+        )
 
         if (!response) {
             throw new Error('No response received.')
         }
 
         if (!response.verified) {
-            throw new Error('User did not complete the request')
+            throw new Error('User cancelled login request.')
         }
 
         return {
@@ -140,10 +91,47 @@ export class WalletPluginWAX implements WalletPlugin {
      * @param resolved ResolvedSigningRequest
      * @returns Promise<Signature>
      */
-    async sign(resolved: ResolvedSigningRequest, context: TransactContext): Promise<Signature> {
-        // Example response...
-        return Signature.from(
-            'SIG_K1_KfqBXGdSRnVgZbAXyL9hEYbAvrZjcaxUCenD7Z3aX6yzf6MEyc4Cy3ywToD4j3SKkzSg7L1uvRUirEPHwAwrbg5c9z27Z3'
+    async sign(
+        resolved: ResolvedSigningRequest,
+        context: TransactContext
+    ): Promise<WalletPluginSignResponse> {
+        // TODO: check if can auto sign and modify the way it acts
+        // https://github.com/worldwide-asset-exchange/waxjs/blob/develop/src/WaxSigningApi.ts#L93
+
+        const response: WAXCloudWalletSigningResponse = await transactPopup(
+            `${this.url}/cloud-wallet/signing/`,
+            resolved
         )
+
+        if (!response) {
+            throw new Error('No response received.')
+        }
+
+        if (!response.verified) {
+            throw new Error('User cancelled signing request.')
+        }
+
+        // Determine if there are any fees to accept
+        const hasFees = response.waxFee || response.ramFee
+        if (hasFees) {
+            throw new Error('NYI: Prompt user with fee for acceptance')
+        }
+
+        // Create a modified signing request based on the WAX Cloud Wallet response
+        const request = await SigningRequest.create(
+            {
+                transaction: Serializer.decode({
+                    data: response.serializedTransaction,
+                    type: Transaction,
+                }),
+            },
+            context.esrOptions
+        )
+
+        // Return modified request and signatures to Wharf
+        return {
+            request,
+            signatures: response.signatures,
+        }
     }
 }
