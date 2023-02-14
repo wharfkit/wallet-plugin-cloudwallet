@@ -28,7 +28,7 @@ export function validateModifications(original: Transaction, modified: Transacti
                 newAction.account.equals('eosio.token') && newAction.name.equals('transfer')
             if (isTokenTransfer) {
                 const data = Transfer.from(newAction.data)
-                if (data.to.equals('txfee.wax') && data.memo.startsWith('WAX fee for')) {
+                if (data.to.equals('txfee.wam') && data.memo.startsWith('WAX fee for')) {
                     continue
                 }
             }
