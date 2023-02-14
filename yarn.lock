@@ -559,10 +559,10 @@
     "@typescript-eslint/types" "5.50.0"
     eslint-visitor-keys "^3.3.0"
 
-"@wharfkit/session@^0.3.0-ui-8":
-  version "0.3.0-ui-8"
-  resolved "https://registry.yarnpkg.com/@wharfkit/session/-/session-0.3.0-ui-8.tgz#f0d78bd4c4313b1c0ff3d1315a8cde7b2c309f2f"
-  integrity sha512-PkoKuMcTPUaj0ifPUG/Au4U3I3Q7lI/gNqZ3Gd88Qx8RuVjzc1NaiKeUeMCMbdOAOBKRJ+H52a9+WfWffY7kaA==
+"@wharfkit/session@^0.3.0-ui-9":
+  version "0.3.0-ui-9"
+  resolved "https://registry.yarnpkg.com/@wharfkit/session/-/session-0.3.0-ui-9.tgz#6ad28cbba846ce2ace1d9aa526c0c5c0323af1a7"
+  integrity sha512-Zj4Zhm3w2triU9ZaWXd9WojwkrDx0haM3n1F1iZPU/FYionyjhIQYkTxaXasyDk3+Hgi5JEcLVWdEuiEzOwQkw==
   dependencies:
     "@greymass/eosio" "^0.6.8"
     eosio-signing-request "^2.5.2"
