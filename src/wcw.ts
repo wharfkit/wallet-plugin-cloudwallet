@@ -7,6 +7,7 @@ interface WAXCloudWalletResponse {
 
 export interface WAXCloudWalletLoginResponse extends WAXCloudWalletResponse {
     autoLogin: boolean
+    isTemp?: boolean
     pubKeys: PublicKeyType[]
     userAccount: NameType
 }
@@ -23,7 +24,27 @@ export interface WAXCloudWalletSigningResponse extends WAXCloudWalletResponse {
     waxFee?: number
 }
 
-export async function loginPopup(
+export async function autoLogin(urlString: URL | string): Promise<WAXCloudWalletLoginResponse> {
+    // TODO: Figure out what temp accounts are
+    //
+    // if (this.returnTempAccount) {
+    //   url.search = "returnTemp=true";
+    // } else {
+    //   url.search = "";
+    // }
+    const url = new URL(urlString)
+    const response = await fetch(String(url), {
+        credentials: 'include',
+        method: 'get',
+    })
+    if (!response.ok) {
+        throw new Error(`Login Endpoint Error ${response.status} ${response.statusText}`)
+    }
+    const data = await response.json()
+    return data
+}
+
+export async function popupLogin(
     urlString: URL | string,
     timeout = 300000
 ): Promise<WAXCloudWalletLoginResponse> {
@@ -60,7 +81,7 @@ export async function loginPopup(
     })
 }
 
-export async function transactPopup(
+export async function popupTransact(
     urlString: URL | string,
     request: ResolvedSigningRequest,
     timeout = 300000

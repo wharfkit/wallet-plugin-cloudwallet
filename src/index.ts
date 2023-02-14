@@ -13,8 +13,9 @@ import {
     WalletPluginSignResponse,
 } from '@wharfkit/session'
 import {
-    loginPopup,
-    transactPopup,
+    autoLogin,
+    popupLogin,
+    popupTransact,
     WAXCloudWalletLoginResponse,
     WAXCloudWalletSigningResponse,
 } from './wcw'
@@ -50,6 +51,7 @@ export class WalletPluginWAX implements WalletPlugin {
      * WAX Cloud Wallet Configuration
      */
     public url = 'https://all-access.wax.io'
+    public autoUrl = 'https://api-idm.wax.io/v1/accounts/auto-accept'
     public loginTimeout = 300000 // 5 minutes
 
     /**
@@ -63,11 +65,15 @@ export class WalletPluginWAX implements WalletPlugin {
             throw new Error('A chain must be selected to login with.')
         }
 
-        // TODO: check if we can auto login and modify the way it acts (no popup)
-        const response: WAXCloudWalletLoginResponse = await loginPopup(
-            `${this.url}/cloud-wallet/login/`
-        )
+        // Attempt automatic login
+        let response: WAXCloudWalletLoginResponse = await autoLogin(`${this.autoUrl}/login`)
 
+        // If failed, use popup login
+        if (!response) {
+            response = await popupLogin(`${this.url}/cloud-wallet/login/`)
+        }
+
+        // If failed due to no response or no verified response, throw error
         if (!response) {
             throw new Error('No response received.')
         }
@@ -76,6 +82,7 @@ export class WalletPluginWAX implements WalletPlugin {
             throw new Error('User cancelled login request.')
         }
 
+        // Return to Wharf
         return {
             chain: context.chain.id,
             permissionLevel: PermissionLevel.from({
@@ -98,7 +105,7 @@ export class WalletPluginWAX implements WalletPlugin {
         // TODO: check if can auto sign and modify the way it acts
         // https://github.com/worldwide-asset-exchange/waxjs/blob/develop/src/WaxSigningApi.ts#L93
 
-        const response: WAXCloudWalletSigningResponse = await transactPopup(
+        const response: WAXCloudWalletSigningResponse = await popupTransact(
             `${this.url}/cloud-wallet/signing/`,
             resolved
         )
