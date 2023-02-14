@@ -1,4 +1,5 @@
 import {
+    BrowserLocalStorage,
     LoginContext,
     PermissionLevel,
     ResolvedSigningRequest,
@@ -12,13 +13,11 @@ import {
     WalletPluginMetadata,
     WalletPluginSignResponse,
 } from '@wharfkit/session'
-import {
-    autoLogin,
-    popupLogin,
-    popupTransact,
-    WAXCloudWalletLoginResponse,
-    WAXCloudWalletSigningResponse,
-} from './wcw'
+import {autoLogin, popupLogin} from './login'
+import {allowAutosign, autoSign, popupTransact} from './sign'
+import {WAXCloudWalletSigningResponse} from './types'
+
+export const storage = new BrowserLocalStorage('wallet-plugin-wax')
 
 export class WalletPluginWAX implements WalletPlugin {
     /**
@@ -32,7 +31,7 @@ export class WalletPluginWAX implements WalletPlugin {
         // The blockchains this WalletPlugin supports
         supportedChains: [
             '1064487b3cd1a897ce03ae5b6a865651747e2e152090f99c1d19d44e01aea5a4', // WAX (Mainnet)
-            // 'f16b1833c747c43682f4386fca9cbb327929334a762755ebec17f6f23c9b8a12', // WAX (Testnet)
+            // 'f16b1833c747c43682f4386fca9cbb327929334a762755ebec17f6f23c9b8a12', // NYI - WAX (Testnet)
         ],
     }
 
@@ -65,11 +64,11 @@ export class WalletPluginWAX implements WalletPlugin {
             throw new Error('A chain must be selected to login with.')
         }
 
+        let response
         // Attempt automatic login
-        let response: WAXCloudWalletLoginResponse = await autoLogin(`${this.autoUrl}/login`)
-
-        // If failed, use popup login
-        if (!response) {
+        try {
+            response = await autoLogin(`${this.autoUrl}/login`)
+        } catch (e) {
             response = await popupLogin(`${this.url}/cloud-wallet/login/`)
         }
 
@@ -81,6 +80,9 @@ export class WalletPluginWAX implements WalletPlugin {
         if (!response.verified) {
             throw new Error('User cancelled login request.')
         }
+
+        // Save our whitelisted contracts
+        storage.write('whitelist', JSON.stringify(response.whitelistedContracts))
 
         // Return to Wharf
         return {
@@ -96,27 +98,14 @@ export class WalletPluginWAX implements WalletPlugin {
      *
      * @param chain ChainDefinition
      * @param resolved ResolvedSigningRequest
-     * @returns Promise<Signature>
+     * @returns Promise<Signature>v9yz#NjodUvO
      */
     async sign(
         resolved: ResolvedSigningRequest,
         context: TransactContext
     ): Promise<WalletPluginSignResponse> {
-        // TODO: check if can auto sign and modify the way it acts
-        // https://github.com/worldwide-asset-exchange/waxjs/blob/develop/src/WaxSigningApi.ts#L93
-
-        const response: WAXCloudWalletSigningResponse = await popupTransact(
-            `${this.url}/cloud-wallet/signing/`,
-            resolved
-        )
-
-        if (!response) {
-            throw new Error('No response received.')
-        }
-
-        if (!response.verified) {
-            throw new Error('User cancelled signing request.')
-        }
+        // Perform WAX Cloud Wallet signing
+        const response = await this.waxSign(resolved)
 
         // Determine if there are any fees to accept
         const hasFees = response.waxFee || response.ramFee
@@ -140,5 +129,40 @@ export class WalletPluginWAX implements WalletPlugin {
             request,
             signatures: response.signatures,
         }
+    }
+    async waxSign(resolved: ResolvedSigningRequest): Promise<WAXCloudWalletSigningResponse> {
+        let response: WAXCloudWalletSigningResponse
+        // Check if automatic signing is allowed
+        if (await allowAutosign(resolved)) {
+            try {
+                // Try automatic signing
+                // console.log('attempting autoSign')
+                response = await autoSign(`${this.autoUrl}/signing`, resolved)
+            } catch (e) {
+                // Fallback to poup signing
+                // console.log('autoSign failed, popping up')
+                response = await popupTransact(`${this.url}/cloud-wallet/signing/`, resolved)
+            }
+        } else {
+            // If automatic is not allowed use the popup
+            // console.log('autoSign not allowed, using popup')
+            response = await popupTransact(`${this.url}/cloud-wallet/signing/`, resolved)
+        }
+
+        // Catch unknown errors where no response is returned
+        if (!response) {
+            throw new Error('No response received.')
+        }
+
+        // Ensure the response is verified, if not the user most likely cancelled the request
+        if (!response.verified) {
+            throw new Error('User cancelled signing request.')
+        }
+
+        // Save our whitelisted contracts
+        storage.write('whitelist', JSON.stringify(response.whitelistedContracts))
+
+        // Return the response from the API
+        return response
     }
 }

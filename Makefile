@@ -8,6 +8,9 @@ NYC_OPTS := --temp-dir build/nyc_output --report-dir build/coverage
 lib: ${SRC_FILES} package.json tsconfig.json node_modules rollup.config.js
 	@${BIN}/rollup -c && touch lib
 
+dev: ${SRC_FILES} package.json tsconfig.json node_modules rollup.config.js
+	@./node_modules/.bin/rollup -c ./rollup.config.js -w
+
 .PHONY: test
 test: node_modules
 	@TS_NODE_PROJECT='./test/tsconfig.json' \
