@@ -17,6 +17,7 @@ import {
 import {autoLogin, popupLogin} from './login'
 import {allowAutosign, autoSign, popupTransact} from './sign'
 import {WAXCloudWalletLoginResponse, WAXCloudWalletSigningResponse} from './types'
+import {validateModifications} from './utils'
 
 export const storage = new BrowserLocalStorage('wallet-plugin-wax')
 
@@ -130,6 +131,8 @@ export class WalletPluginWAX implements WalletPlugin {
 
             // Determine if the transaction changed from the requested transaction
             if (!responseTransaction.equals(resolved.transaction)) {
+                // Evalutate whether modifications are valid, if not throw error
+                validateModifications(resolved.transaction, responseTransaction)
                 // If changed, add the modified request returned by WCW to the response
                 result.request = await SigningRequest.create(
                     {
