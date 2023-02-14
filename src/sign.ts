@@ -5,6 +5,11 @@ import {WAXCloudWalletSigningResponse} from './types'
 import {getCurrentTime, isValidEvent, registerCloseListener} from './utils'
 
 export async function allowAutosign(request: ResolvedSigningRequest): Promise<boolean> {
+    const ua = navigator.userAgent.toLowerCase()
+    if (ua.search('chrome') === -1 && ua.search('safari') >= 0) {
+        return false
+    }
+
     try {
         const data = await storage.read('whitelist')
         if (!data) return false
@@ -118,16 +123,6 @@ export async function popupTransact(
         window.addEventListener('message', handleEvent)
     })
 }
-
-// function canAutoSign(transaction: Transaction): boolean {
-//     const ua = navigator.userAgent.toLowerCase()
-
-//     if (ua.search('chrome') === -1 && ua.search('safari') >= 0) {
-//         return false
-//     }
-
-//     return !transaction.actions.find((action) => !this.isWhitelisted(action))
-// }
 
 // function isWhitelisted(action: Action): boolean {
 //     return !!(
