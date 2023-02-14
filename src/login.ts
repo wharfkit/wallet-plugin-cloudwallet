@@ -1,5 +1,5 @@
 import {WAXCloudWalletLoginResponse} from './types'
-import {isValidEvent} from './utils'
+import {isValidEvent, registerCloseListener} from './utils'
 
 export async function autoLogin(urlString: URL | string): Promise<WAXCloudWalletLoginResponse> {
     // TODO: Figure out what temp accounts are
@@ -33,6 +33,7 @@ export async function popupLogin(
     }
     // Return a promise that either times out or resolves when the popup resolves
     return new Promise<WAXCloudWalletLoginResponse>((resolve, reject) => {
+        const closeListener = registerCloseListener(popup, reject)
         // Event handler awaiting response from WCW
         const handleEvent = (event: MessageEvent) => {
             if (!isValidEvent(event, url, popup)) {
@@ -45,6 +46,7 @@ export async function popupLogin(
             } finally {
                 window.removeEventListener('message', handleEvent)
                 clearTimeout(autoCancel)
+                clearInterval(closeListener)
             }
         }
         // Automatically cancel request after 5 minutes to cleanup windows/promises

@@ -2,7 +2,7 @@ import {ResolvedSigningRequest} from '@wharfkit/session'
 
 import {storage} from '.'
 import {WAXCloudWalletSigningResponse} from './types'
-import {getCurrentTime, isValidEvent} from './utils'
+import {getCurrentTime, isValidEvent, registerCloseListener} from './utils'
 
 export async function allowAutosign(request: ResolvedSigningRequest): Promise<boolean> {
     try {
@@ -72,6 +72,7 @@ export async function popupTransact(
     }
 
     return new Promise<WAXCloudWalletSigningResponse>((resolve, reject) => {
+        const closeListener = registerCloseListener(popup, reject)
         const handleEvent = (event: MessageEvent) => {
             if (!isValidEvent(event, url, popup)) {
                 return
@@ -98,6 +99,7 @@ export async function popupTransact(
                     window.removeEventListener('message', handleEvent)
                     window.removeEventListener('message', handleSigning)
                     clearTimeout(autoCancel)
+                    clearInterval(closeListener)
                 }
             }
             window.addEventListener('message', handleSigning)

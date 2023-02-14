@@ -1,3 +1,13 @@
+export function registerCloseListener(popup: Window, reject) {
+    const closeListener = setInterval(() => {
+        if (popup.closed) {
+            clearInterval(closeListener)
+            reject('The window was closed before the request was completed.')
+        }
+    }, 500)
+    return closeListener
+}
+
 export function getCurrentTime() {
     return Math.floor(new Date().getTime())
 }
