@@ -13,9 +13,10 @@ import {
     WalletPluginMetadata,
     WalletPluginSignResponse,
 } from '@wharfkit/session'
+
 import {autoLogin, popupLogin} from './login'
 import {allowAutosign, autoSign, popupTransact} from './sign'
-import {WAXCloudWalletSigningResponse} from './types'
+import {WAXCloudWalletLoginResponse, WAXCloudWalletSigningResponse} from './types'
 
 export const storage = new BrowserLocalStorage('wallet-plugin-wax')
 
@@ -64,11 +65,12 @@ export class WalletPluginWAX implements WalletPlugin {
             throw new Error('A chain must be selected to login with.')
         }
 
-        let response
-        // Attempt automatic login
+        let response: WAXCloudWalletLoginResponse
         try {
+            // Attempt automatic login
             response = await autoLogin(`${this.autoUrl}/login`)
         } catch (e) {
+            // Fallback to popup login
             response = await popupLogin(`${this.url}/cloud-wallet/login/`)
         }
 
@@ -84,7 +86,7 @@ export class WalletPluginWAX implements WalletPlugin {
         // Save our whitelisted contracts
         storage.write('whitelist', JSON.stringify(response.whitelistedContracts))
 
-        // Return to Wharf
+        // Return to session's transact call
         return {
             chain: context.chain.id,
             permissionLevel: PermissionLevel.from({
@@ -98,7 +100,7 @@ export class WalletPluginWAX implements WalletPlugin {
      *
      * @param chain ChainDefinition
      * @param resolved ResolvedSigningRequest
-     * @returns Promise<Signature>v9yz#NjodUvO
+     * @returns Promise<Signature>
      */
     async sign(
         resolved: ResolvedSigningRequest,
@@ -113,23 +115,35 @@ export class WalletPluginWAX implements WalletPlugin {
             throw new Error('NYI: Prompt user with fee for acceptance')
         }
 
-        // Create a modified signing request based on the WAX Cloud Wallet response
-        const request = await SigningRequest.create(
-            {
-                transaction: Serializer.decode({
-                    data: response.serializedTransaction,
-                    type: Transaction,
-                }),
-            },
-            context.esrOptions
-        )
-
-        // Return modified request and signatures to Wharf
-        return {
-            request,
+        // The response to return to the Session Kit
+        const result: WalletPluginSignResponse = {
             signatures: response.signatures,
         }
+
+        // If a transaction was returned by the WCW
+        if (response.serializedTransaction) {
+            // Convert the serialized transaction from the WCW to a Transaction object
+            const responseTransaction = Serializer.decode({
+                data: response.serializedTransaction,
+                type: Transaction,
+            })
+
+            // Determine if the transaction changed from the requested transaction
+            if (!responseTransaction.equals(resolved.transaction)) {
+                // If changed, add the modified request returned by WCW to the response
+                result.request = await SigningRequest.create(
+                    {
+                        transaction: responseTransaction,
+                    },
+                    context.esrOptions
+                )
+            }
+        }
+
+        // Return modified request and signatures to Wharf
+        return result
     }
+
     async waxSign(resolved: ResolvedSigningRequest): Promise<WAXCloudWalletSigningResponse> {
         let response: WAXCloudWalletSigningResponse
         // Check if automatic signing is allowed
