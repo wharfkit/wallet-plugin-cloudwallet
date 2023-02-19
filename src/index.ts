@@ -1,4 +1,5 @@
 import {
+    AbstractWalletPlugin,
     BrowserLocalStorage,
     LoginContext,
     PermissionLevel,
@@ -21,7 +22,7 @@ import {validateModifications} from './utils'
 
 export const storage = new BrowserLocalStorage('wallet-plugin-wax')
 
-export class WalletPluginWAX implements WalletPlugin {
+export class WalletPluginWAX extends AbstractWalletPlugin implements WalletPlugin {
     /**
      * The logic configuration for the wallet plugin.
      */
@@ -48,6 +49,14 @@ export class WalletPluginWAX implements WalletPlugin {
         download: 'https://all-access.wax.io',
     }
 
+    public get id(): string {
+        return 'wcw'
+    }
+
+    public get data() {
+        return {}
+    }
+
     /**
      * WAX Cloud Wallet Configuration
      */
@@ -69,9 +78,11 @@ export class WalletPluginWAX implements WalletPlugin {
         let response: WAXCloudWalletLoginResponse
         try {
             // Attempt automatic login
+            context.ui.status('Establishing connection...')
             response = await autoLogin(`${this.autoUrl}/login`)
         } catch (e) {
             // Fallback to popup login
+            context.ui.status('Complete the login using the WAX Cloud Wallet popup window.')
             response = await popupLogin(`${this.url}/cloud-wallet/login/`)
         }
 
