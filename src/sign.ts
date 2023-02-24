@@ -1,19 +1,20 @@
-import {ResolvedSigningRequest} from '@wharfkit/session'
+import {ResolvedSigningRequest, WalletPluginData} from '@wharfkit/session'
 
-import {storage} from '.'
 import {WAXCloudWalletSigningResponse} from './types'
 import {getCurrentTime, isValidEvent, registerCloseListener} from './utils'
 
-export async function allowAutosign(request: ResolvedSigningRequest): Promise<boolean> {
+export async function allowAutosign(
+    request: ResolvedSigningRequest,
+    data: WalletPluginData
+): Promise<boolean> {
     const ua = navigator.userAgent.toLowerCase()
     if (ua.search('chrome') === -1 && ua.search('safari') >= 0) {
         return false
     }
 
     try {
-        const data = await storage.read('whitelist')
         if (!data) return false
-        const whitelist = JSON.parse(data)
+        const whitelist = data.whitelist
         const {actions} = request.resolvedTransaction
         return actions.every((action) => {
             return whitelist.find((entry) => {

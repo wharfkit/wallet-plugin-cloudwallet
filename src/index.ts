@@ -1,6 +1,5 @@
 import {
     AbstractWalletPlugin,
-    BrowserLocalStorage,
     LoginContext,
     PermissionLevel,
     ResolvedSigningRequest,
@@ -19,8 +18,6 @@ import {autoLogin, popupLogin} from './login'
 import {allowAutosign, autoSign, popupTransact} from './sign'
 import {WAXCloudWalletLoginResponse, WAXCloudWalletSigningResponse} from './types'
 import {validateModifications} from './utils'
-
-export const storage = new BrowserLocalStorage('wallet-plugin-wax')
 
 export class WalletPluginWAX extends AbstractWalletPlugin implements WalletPlugin {
     /**
@@ -49,12 +46,11 @@ export class WalletPluginWAX extends AbstractWalletPlugin implements WalletPlugi
         download: 'https://all-access.wax.io',
     }
 
+    /**
+     * The unique identifier for the wallet plugin.
+     */
     public get id(): string {
         return 'wcw'
-    }
-
-    public get data() {
-        return {}
     }
 
     /**
@@ -96,7 +92,7 @@ export class WalletPluginWAX extends AbstractWalletPlugin implements WalletPlugi
         }
 
         // Save our whitelisted contracts
-        storage.write('whitelist', JSON.stringify(response.whitelistedContracts))
+        this.data.whitelist = response.whitelistedContracts
 
         // Return to session's transact call
         return {
@@ -161,7 +157,7 @@ export class WalletPluginWAX extends AbstractWalletPlugin implements WalletPlugi
     async waxSign(resolved: ResolvedSigningRequest): Promise<WAXCloudWalletSigningResponse> {
         let response: WAXCloudWalletSigningResponse
         // Check if automatic signing is allowed
-        if (await allowAutosign(resolved)) {
+        if (await allowAutosign(resolved, this.data)) {
             try {
                 // Try automatic signing
                 // console.log('attempting autoSign')
@@ -188,7 +184,7 @@ export class WalletPluginWAX extends AbstractWalletPlugin implements WalletPlugi
         }
 
         // Save our whitelisted contracts
-        storage.write('whitelist', JSON.stringify(response.whitelistedContracts))
+        this.data.whitelist = response.whitelistedContracts
 
         // Return the response from the API
         return response

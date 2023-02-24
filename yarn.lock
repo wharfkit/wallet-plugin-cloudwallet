@@ -212,10 +212,21 @@
     minimatch "^3.1.2"
     strip-json-comments "^3.1.1"
 
-"@greymass/eosio@^0.6.0", "@greymass/eosio@^0.6.8":
+"@greymass/eosio@^0.6.0":
   version "0.6.8"
   resolved "https://registry.yarnpkg.com/@greymass/eosio/-/eosio-0.6.8.tgz#6f24071eaec6e0df33e3c35ca0704a53146c00d2"
   integrity sha512-niWrUjCzQR9bJsl5IhrJIoi9fWCL4gEAOOaBdTmJuUFpOISQYe4zir5TjNlvlfpCC9ajy7o0pUNpDZuVrNaijQ==
+  dependencies:
+    bn.js "^4.11.9"
+    brorand "^1.1.0"
+    elliptic "^6.5.4"
+    hash.js "^1.0.0"
+    tslib "^2.0.3"
+
+"@greymass/eosio@^0.6.9":
+  version "0.6.9"
+  resolved "https://registry.yarnpkg.com/@greymass/eosio/-/eosio-0.6.9.tgz#e5475dfb6f1507da6ec2f9f0065e19684e8d4b70"
+  integrity sha512-Xd6X3sesStFQiw3+6+8tD1IauW3WX25GQnHa/zhUqIE1cB23bjzLqn89JDTcyQYKJ4R24L1rERqko/u6p7RizA==
   dependencies:
     bn.js "^4.11.9"
     brorand "^1.1.0"
@@ -559,12 +570,12 @@
     "@typescript-eslint/types" "5.50.0"
     eslint-visitor-keys "^3.3.0"
 
-"@wharfkit/session@^0.3.0-ui-11":
-  version "0.3.0-ui-11"
-  resolved "https://registry.yarnpkg.com/@wharfkit/session/-/session-0.3.0-ui-11.tgz#d96d4a8f6509c85e2d29db0452af6412eb72e27b"
-  integrity sha512-x84D9Ao8t/HL7BcGXz+wlUrB04yQHpH9kezYF78g+pO82o++5mUMYFS/oZrf6uNBZpKr6b0r3EmJuHstW42Ryw==
+"@wharfkit/session@^0.3.0-ui-13":
+  version "0.3.0-ui-13"
+  resolved "https://registry.yarnpkg.com/@wharfkit/session/-/session-0.3.0-ui-13.tgz#42da63eaad14c5cfd56b0fe0dfa42576caecef98"
+  integrity sha512-x9lzzNeb7+EZ4Q+Cw0seJSEDJcsuDpsqFkMfQKwkpgrf4mJ9oYSUHo7lrynZgJay9Psp4d3EqGcoNGRcV2SMtg==
   dependencies:
-    "@greymass/eosio" "^0.6.8"
+    "@greymass/eosio" "^0.6.9"
     eosio-signing-request "^2.5.2"
     pako "^2.0.4"
     tslib "^2.1.0"
