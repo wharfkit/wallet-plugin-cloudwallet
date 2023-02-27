@@ -59,7 +59,7 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
      * The unique identifier for the wallet plugin.
      */
     public get id(): string {
-        return 'wcw'
+        return 'cloudwallet'
     }
 
     /**
