@@ -21,6 +21,13 @@ import {allowAutosign, autoSign, popupTransact} from './sign'
 import {WAXCloudWalletLoginResponse, WAXCloudWalletSigningResponse} from './types'
 import {validateModifications} from './utils'
 
+export interface WalletPluginCloudWalletOptions {
+    supportedChains?: string[]
+    url?: string
+    autoUrl?: string
+    loginTimeout?: number
+}
+
 export class WalletPluginCloudWallet extends AbstractWalletPlugin implements WalletPlugin {
     /**
      * The logic configuration for the wallet plugin.
@@ -61,6 +68,25 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
     public url = 'https://www.mycloudwallet.com'
     public autoUrl = 'https://idm-api.mycloudwallet.com/v1/accounts/auto-accept'
     public loginTimeout = 300000 // 5 minutes
+
+    /**
+     * Constructor to allow overriding of plugin configuration.
+     */
+    constructor(options?: WalletPluginCloudWalletOptions) {
+        super()
+        if (options?.supportedChains) {
+            this.config.supportedChains = options.supportedChains
+        }
+        if (options?.url) {
+            this.url = options.url
+        }
+        if (options?.autoUrl) {
+            this.autoUrl = options.autoUrl
+        }
+        if (options?.loginTimeout) {
+            this.loginTimeout = options.loginTimeout
+        }
+    }
 
     /**
      * Performs the wallet logic required to login and return the chain and permission level to use.
