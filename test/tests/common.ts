@@ -1,7 +1,7 @@
 import {assert} from 'chai'
 import {PermissionLevel, SessionKit} from '@wharfkit/session'
 
-import {WalletPluginWAX} from '$lib'
+import {WalletPluginCloudWallet} from '$lib'
 import {mockFetch} from '$test/utils/mock-fetch'
 
 const mockChainDefinition = {
@@ -15,7 +15,7 @@ const mockSessionKitOptions = {
     appName: 'unittests',
     chains: [mockChainDefinition],
     fetch: mockFetch, // Required for unit tests
-    walletPlugins: [new WalletPluginWAX()],
+    walletPlugins: [new WalletPluginCloudWallet()],
 }
 
 suite('wallet plugin', function () {

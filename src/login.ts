@@ -27,7 +27,7 @@ export async function popupLogin(
 ): Promise<WAXCloudWalletLoginResponse> {
     // Open the popup window
     const url = new URL(urlString)
-    const popup = await window.open(url, 'WalletPluginWAXPopup', 'height=800,width=600')
+    const popup = await window.open(url, 'WalletPluginCloudWalletPopup', 'height=800,width=600')
     if (!popup) {
         throw new Error('Unable to open popup window')
     }
