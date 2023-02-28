@@ -50,11 +50,15 @@ export function validateModifications(original: Transaction, modified: Transacti
 }
 
 // Create and return an interval that checks whether or not the window has been closed
-export function registerCloseListener(popup: Window, reject) {
+export function registerCloseListener(t, popup: Window, reject) {
     const closeListener = setInterval(() => {
         if (popup.closed) {
             clearInterval(closeListener)
-            reject('The window was closed before the request was completed.')
+            reject(
+                t('error.closed', {
+                    default: 'The Cloud Wallet was closed before the request was completed',
+                })
+            )
         }
     }, 500)
     return closeListener

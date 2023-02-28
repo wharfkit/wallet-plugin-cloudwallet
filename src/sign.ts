@@ -1,4 +1,8 @@
-import {ResolvedSigningRequest, WalletPluginData} from '@wharfkit/session'
+import {
+    ResolvedSigningRequest,
+    UserInterfaceTranslateOptions,
+    WalletPluginData,
+} from '@wharfkit/session'
 
 import {WAXCloudWalletSigningResponse} from './types'
 import {getCurrentTime, isValidEvent, registerCloseListener} from './utils'
@@ -38,6 +42,7 @@ export async function allowAutosign(
 }
 
 export async function autoSign(
+    t: (key: string, options?: UserInterfaceTranslateOptions) => string,
     urlString: URL | string,
     request: ResolvedSigningRequest
 ): Promise<WAXCloudWalletSigningResponse> {
@@ -56,16 +61,28 @@ export async function autoSign(
         signal: controller.signal,
     })
     if (!response.ok) {
-        throw new Error('autosign api call failure: ' + JSON.stringify(response))
+        throw new Error(
+            t('error.endpoint', {
+                default: `Login Endpoint Error {{status}} - {{statusText}}`,
+                status: response.status,
+                statusText: response.statusText,
+            })
+        )
     }
     const data: any = await response.json()
     if (data.processed && data.processed.except) {
-        throw new Error('autosign transaction failure: ' + JSON.stringify(data))
+        throw new Error(
+            t('error.exception', {
+                default: 'Signing exception occurred: {{exception}}',
+                exception: JSON.stringify(data),
+            })
+        )
     }
     return data
 }
 
 export async function popupTransact(
+    t: (key: string, options?: UserInterfaceTranslateOptions) => string,
     urlString: URL | string,
     request: ResolvedSigningRequest,
     timeout = 300000
@@ -74,11 +91,16 @@ export async function popupTransact(
 
     const popup = await window.open(url, 'WalletPluginCloudWalletPopup', 'height=800,width=600')
     if (!popup) {
-        throw new Error('Unable to open popup window')
+        throw new Error(
+            t('error.popup', {
+                default:
+                    'Unable to open the popup window. Check your browser settings and try again.',
+            })
+        )
     }
 
     return new Promise<WAXCloudWalletSigningResponse>((resolve, reject) => {
-        const closeListener = registerCloseListener(popup, reject)
+        const closeListener = registerCloseListener(t, popup, reject)
         const handleEvent = (event: MessageEvent) => {
             if (!isValidEvent(event, url, popup)) {
                 return
@@ -116,7 +138,11 @@ export async function popupTransact(
             window.removeEventListener('message', handleEvent)
             reject(
                 new Error(
-                    `Transaction signing request has timed out after ${timeout / 1000} seconds.`
+                    t('error.timeout', {
+                        default:
+                            'The request has timed out after {{timeout}} seconds. Please try again.',
+                        timeout: timeout / 1000,
+                    })
                 )
             )
         }, timeout)

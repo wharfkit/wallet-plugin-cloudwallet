@@ -1,6 +1,7 @@
 import fs from 'fs'
 import dts from 'rollup-plugin-dts'
 import typescript from '@rollup/plugin-typescript'
+import json from '@rollup/plugin-json'
 
 import pkg from './package.json'
 
@@ -29,7 +30,7 @@ export default [
             sourcemap: true,
             exports: 'named',
         },
-        plugins: [typescript({target: 'es6'})],
+        plugins: [typescript({target: 'es6'}), json()],
         external,
     },
     {
@@ -40,7 +41,7 @@ export default [
             format: 'esm',
             sourcemap: true,
         },
-        plugins: [typescript({target: 'es2020'})],
+        plugins: [typescript({target: 'es2020'}), json()],
         external,
     },
     {

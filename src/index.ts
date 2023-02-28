@@ -9,6 +9,7 @@ import {
     SigningRequest,
     TransactContext,
     Transaction,
+    UserInterfaceTranslateOptions,
     WalletPlugin,
     WalletPluginConfig,
     WalletPluginLoginResponse,
@@ -20,6 +21,7 @@ import {autoLogin, popupLogin} from './login'
 import {allowAutosign, autoSign, popupTransact} from './sign'
 import {WAXCloudWalletLoginResponse, WAXCloudWalletSigningResponse} from './types'
 import {validateModifications} from './utils'
+import defaultTranslations from './translations.json'
 
 export interface WalletPluginCloudWalletOptions {
     supportedChains?: string[]
@@ -29,6 +31,16 @@ export interface WalletPluginCloudWalletOptions {
 }
 
 export class WalletPluginCloudWallet extends AbstractWalletPlugin implements WalletPlugin {
+    /**
+     * The unique identifier for the wallet plugin.
+     */
+    id = 'cloudwallet'
+
+    /**
+     * The translations for this plugin
+     */
+    translations = defaultTranslations
+
     /**
      * The logic configuration for the wallet plugin.
      */
@@ -53,13 +65,6 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
         logo: 'PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTcuOTQ5NDMgMTkuMjU4MkM2LjE0OTM2IDE3LjQ1ODIgNi4xNDkzNiAxNC41NDE4IDcuOTQ5NDMgMTIuNzQxOEwxMi43NDE2IDcuOTVDMTQuNTQxNyA2LjE1MDA2IDE3LjQ1ODMgNi4xNTAwNiAxOS4yNTg0IDcuOTVMMjAuOTQ2NSA5LjYzNzk0TDI1LjYxNDEgNC45NzA2OEwyMy45MjYgMy4yODI3NEMxOS41NDg3IC0xLjA5NDI1IDEyLjQ1MTMgLTEuMDk0MjUgOC4wNzQgMy4yODI3NEwzLjI4Mjk3IDguMDc0NTdDLTEuMDk0MzIgMTIuNDUxNiAtMS4wOTQzMiAxOS41NDg0IDMuMjgyOTcgMjMuOTI1NEw0Ljk2MzAzIDI1LjYwNTRMOS42MzA2MyAyMC45MzgxTDcuOTUwNTcgMTkuMjU4Mkg3Ljk0OTQzWiIgZmlsbD0idXJsKCNwYWludDBfcmFkaWFsXzE4NDRfNTA4MikiLz4KPHBhdGggZD0iTTI4LjcxNjcgOC4wNzQ1N0wyNy4wMjg2IDYuMzg2NjNMMjIuMzYxIDExLjA1MzlMMjQuMDQ5MSAxMi43NDE4QzI1Ljg0OTIgMTQuNTQxOCAyNS44NDkyIDE3LjQ1ODIgMjQuMDQ5MSAxOS4yNTgyTDE4LjI3NzUgMTMuNDg2OUMxNi45ODgzIDEyLjE5NzggMTQuODk5MSAxMi4xOTc4IDEzLjYwOTkgMTMuNDg2OUMxMi4zMjA3IDE0Ljc3NiAxMi4zMjA3IDE2Ljg2NTEgMTMuNjA5OSAxOC4xNTQyTDE5LjM4MTUgMjMuOTI1NEwxOS4yNTY5IDI0LjA1QzE3LjQ1NjkgMjUuODQ5OSAxNC41NDAyIDI1Ljg0OTkgMTIuNzQwMSAyNC4wNUwxMS4wNDQxIDIyLjM1NDFMNi4zNzY0NiAyNy4wMjEzTDguMDcyNTMgMjguNzE3MkMxMi40NDk4IDMzLjA5NDIgMTkuNTQ3MiAzMy4wOTQyIDIzLjkyNDUgMjguNzE3MkwyNC4wNDkxIDI4LjU5MjdMMjguNzE2NyAyMy45MjU0QzMzLjA5NCAxOS41NDg0IDMzLjA5NCAxMi40NTE2IDI4LjcxNjcgOC4wNzQ1N1oiIGZpbGw9InVybCgjcGFpbnQxX3JhZGlhbF8xODQ0XzUwODIpIi8+CjxkZWZzPgo8cmFkaWFsR3JhZGllbnQgaWQ9InBhaW50MF9yYWRpYWxfMTg0NF81MDgyIiBjeD0iMCIgY3k9IjAiIHI9IjEiIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiBncmFkaWVudFRyYW5zZm9ybT0idHJhbnNsYXRlKDEyLjc5OTkgNC4yMjg5OSkgcm90YXRlKDkwKSBzY2FsZSgxNy44ODUxIDE3Ljg5MTEpIj4KPHN0b3Agc3RvcC1jb2xvcj0iIzY2RkVGMiIvPgo8c3RvcCBvZmZzZXQ9IjEiIHN0b3AtY29sb3I9IiMwMENGREMiLz4KPC9yYWRpYWxHcmFkaWVudD4KPHJhZGlhbEdyYWRpZW50IGlkPSJwYWludDFfcmFkaWFsXzE4NDRfNTA4MiIgY3g9IjAiIGN5PSIwIiByPSIxIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgZ3JhZGllbnRUcmFuc2Zvcm09InRyYW5zbGF0ZSgxOS4xODgxIDE5LjE5MzMpIHJvdGF0ZSg5MCkgc2NhbGUoMTIuODA2NyAxMi44MTE2KSI+CjxzdG9wIHN0b3AtY29sb3I9IiNDN0E1RUEiLz4KPHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjN0Q0QkEzIi8+CjwvcmFkaWFsR3JhZGllbnQ+CjwvZGVmcz4KPC9zdmc+Cg==',
         homepage: 'https://www.mycloudwallet.com',
         download: 'https://www.mycloudwallet.com',
-    }
-
-    /**
-     * The unique identifier for the wallet plugin.
-     */
-    public get id(): string {
-        return 'cloudwallet'
     }
 
     /**
@@ -105,24 +110,33 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
             throw new Error('A chain must be selected to login with.')
         }
 
+        // Retrieve translation helper from the UI, passing the app ID
+        const t = context.ui.getTranslate(this.id)
+
         let response: WAXCloudWalletLoginResponse
         try {
             // Attempt automatic login
-            context.ui.status('Establishing connection...')
-            response = await autoLogin(`${this.autoUrl}/login`)
+            context.ui.status(t('connecting', {default: 'Connecting to Cloud Wallet'}))
+            response = await autoLogin(t, `${this.autoUrl}/login`)
         } catch (e) {
             // Fallback to popup login
-            context.ui.status('Requesting login from Cloud Wallet')
-            response = await popupLogin(`${this.url}/cloud-wallet/login/`)
+            context.ui.status(
+                t('login.popup', {default: 'Login with the Cloud Wallet popup window'})
+            )
+            response = await popupLogin(t, `${this.url}/cloud-wallet/login/`)
         }
 
         // If failed due to no response or no verified response, throw error
         if (!response) {
-            throw new Error('No response received.')
+            throw new Error(t('login.error.response', {default: 'Cloud Wallet failed to respond'}))
         }
 
         if (!response.verified) {
-            throw new Error('User cancelled login request.')
+            throw new Error(
+                t('error.closed', {
+                    default: 'Cloud Wallet closed before the login was completed',
+                })
+            )
         }
 
         // Save our whitelisted contracts
@@ -163,8 +177,15 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
         resolved: ResolvedSigningRequest,
         context: TransactContext
     ): Promise<WalletPluginSignResponse> {
+        if (!context.ui) {
+            throw new Error('A UserInterface must be defined to sign transactions.')
+        }
+
+        // Retrieve translation helper from the UI, passing the app ID
+        const t = context.ui.getTranslate(this.id)
+
         // Perform WAX Cloud Wallet signing
-        const response = await this.getWalletResponse(resolved, context)
+        const response = await this.getWalletResponse(resolved, context, t)
 
         // Determine if there are any fees to accept
         const hasFees = response.waxFee || response.ramFee
@@ -206,35 +227,47 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
 
     async getWalletResponse(
         resolved: ResolvedSigningRequest,
-        context: TransactContext
+        context: TransactContext,
+        t: (key: string, options?: UserInterfaceTranslateOptions) => string
     ): Promise<WAXCloudWalletSigningResponse> {
         let response: WAXCloudWalletSigningResponse
         if (!context.ui) {
             throw new Error('The Cloud Wallet requires a UI to sign transactions.')
         }
+
         // Check if automatic signing is allowed
-        context.ui.status('Requesting signature from Cloud Wallet.')
         if (await allowAutosign(resolved, this.data)) {
             try {
                 // Try automatic signing
-                response = await autoSign(`${this.autoUrl}/signing`, resolved)
+                context.ui.status(t('connecting', {default: 'Connecting to Cloud Wallet'}))
+                response = await autoSign(t, `${this.autoUrl}/signing`, resolved)
             } catch (e) {
                 // Fallback to poup signing
-                response = await popupTransact(`${this.url}/cloud-wallet/signing/`, resolved)
+                context.ui.status(
+                    t('transact.popup', {default: 'Sign with the Cloud Wallet popup window'})
+                )
+                response = await popupTransact(t, `${this.url}/cloud-wallet/signing/`, resolved)
             }
         } else {
             // If automatic is not allowed use the popup
-            response = await popupTransact(`${this.url}/cloud-wallet/signing/`, resolved)
+            context.ui.status(
+                t('transact.popup', {default: 'Sign with the Cloud Wallet popup window'})
+            )
+            response = await popupTransact(t, `${this.url}/cloud-wallet/signing/`, resolved)
         }
 
         // Catch unknown errors where no response is returned
         if (!response) {
-            throw new Error('No response received from Cloud Wallet.')
+            throw new Error(t('login.error.response', {default: 'Cloud Wallet failed to respond'}))
         }
 
         // Ensure the response is verified, if not the user most likely cancelled the request
         if (!response.verified) {
-            throw new Error('The request was canceled from within Cloud Wallet.')
+            throw new Error(
+                t('error.closed', {
+                    default: 'The Cloud Wallet was closed before the request was completed',
+                })
+            )
         }
 
         // Save our whitelisted contracts
