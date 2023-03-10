@@ -7,10 +7,7 @@ import {
 import {WAXCloudWalletSigningResponse} from './types'
 import {getCurrentTime, isValidEvent, registerCloseListener} from './utils'
 
-export async function allowAutosign(
-    request: ResolvedSigningRequest,
-    data: WalletPluginData
-): Promise<boolean> {
+export function allowAutosign(request: ResolvedSigningRequest, data: WalletPluginData): boolean {
     const ua = navigator.userAgent.toLowerCase()
     if (ua.search('chrome') === -1 && ua.search('safari') >= 0) {
         return false

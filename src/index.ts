@@ -4,6 +4,7 @@ import {
     Cancelable,
     LoginContext,
     PermissionLevel,
+    PromptResponse,
     ResolvedSigningRequest,
     Serializer,
     SigningRequest,
@@ -184,51 +185,92 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
         // Retrieve translation helper from the UI, passing the app ID
         const t = context.ui.getTranslate(this.id)
 
+        // Set expiration time frames for the request
+        const expiration = resolved.transaction.expiration.toDate()
+        const now = new Date()
+        const timeout = Math.floor(expiration.getTime() - now.getTime())
+
         // Perform WAX Cloud Wallet signing
-        const response = await this.getWalletResponse(resolved, context, t)
+        const callbackPromise = this.getWalletResponse(resolved, context, t, timeout)
 
-        // Determine if there are any fees to accept
-        const hasFees = response.waxFee || response.ramFee
-        if (hasFees) {
-            throw new Error(
-                'The transaction requires a fee, and the fee interface is not yet implemented.'
-            )
-        }
+        // Tell Wharf we need to prompt the user with a countdown
+        const promptPromise: Cancelable<PromptResponse> = context.ui.prompt({
+            title: 'Sign',
+            body: `Please complete the transaction using the Cloud Wallet popup window.`,
+            elements: [
+                {
+                    type: 'countdown',
+                    data: expiration.toISOString(),
+                },
+            ],
+        })
 
-        // The response to return to the Session Kit
-        const result: WalletPluginSignResponse = {
-            signatures: response.signatures,
-        }
+        // Create a timer to test the external cancelation of the prompt, if defined
+        const timer = setTimeout(() => {
+            if (!context.ui) {
+                throw new Error('No UI defined')
+            }
+            promptPromise.cancel('The request expired, please try again.')
+        }, timeout)
 
-        // If a transaction was returned by the WCW
-        if (response.serializedTransaction) {
-            // Convert the serialized transaction from the WCW to a Transaction object
-            const responseTransaction = Serializer.decode({
-                data: response.serializedTransaction,
-                type: Transaction,
-            })
+        // Clear the timeout if the UI throws (which generally means it closed)
+        promptPromise.catch(() => clearTimeout(timer))
 
-            // Determine if the transaction changed from the requested transaction
-            if (!responseTransaction.equals(resolved.transaction)) {
-                // Evalutate whether modifications are valid, if not throw error
-                validateModifications(resolved.transaction, responseTransaction)
-                // If changed, add the modified request returned by WCW to the response
-                result.request = await SigningRequest.create(
-                    {
-                        transaction: responseTransaction,
-                    },
-                    context.esrOptions
+        // Wait for either the callback or the prompt to resolve
+        const callbackResponse = await Promise.race([callbackPromise, promptPromise]).finally(
+            () => {
+                // Clear the automatic timeout once the race resolves
+                clearTimeout(timer)
+            }
+        )
+
+        if (isCallback(callbackResponse)) {
+            // Determine if there are any fees to accept
+            const hasFees = callbackResponse.waxFee || callbackResponse.ramFee
+            if (hasFees) {
+                throw new Error(
+                    'The transaction requires a fee, and the fee interface is not yet implemented.'
                 )
             }
+
+            // The response to return to the Session Kit
+            const result: WalletPluginSignResponse = {
+                signatures: callbackResponse.signatures,
+            }
+
+            // If a transaction was returned by the WCW
+            if (callbackResponse.serializedTransaction) {
+                // Convert the serialized transaction from the WCW to a Transaction object
+                const responseTransaction = Serializer.decode({
+                    data: callbackResponse.serializedTransaction,
+                    type: Transaction,
+                })
+
+                // Determine if the transaction changed from the requested transaction
+                if (!responseTransaction.equals(resolved.transaction)) {
+                    // Evalutate whether modifications are valid, if not throw error
+                    validateModifications(resolved.transaction, responseTransaction)
+                    // If changed, add the modified request returned by WCW to the response
+                    result.request = await SigningRequest.create(
+                        {
+                            transaction: responseTransaction,
+                        },
+                        context.esrOptions
+                    )
+                }
+            }
+
+            return new Promise((resolve) => resolve(result))
         }
 
-        return new Promise((resolve) => resolve(result))
+        throw new Error('The Cloud Wallet failed to respond')
     }
 
     async getWalletResponse(
         resolved: ResolvedSigningRequest,
         context: TransactContext,
-        t: (key: string, options?: UserInterfaceTranslateOptions) => string
+        t: (key: string, options?: UserInterfaceTranslateOptions) => string,
+        timeout = 300000
     ): Promise<WAXCloudWalletSigningResponse> {
         let response: WAXCloudWalletSigningResponse
         if (!context.ui) {
@@ -236,7 +278,7 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
         }
 
         // Check if automatic signing is allowed
-        if (await allowAutosign(resolved, this.data)) {
+        if (allowAutosign(resolved, this.data)) {
             try {
                 // Try automatic signing
                 context.ui.status(t('connecting', {default: 'Connecting to Cloud Wallet'}))
@@ -246,14 +288,24 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
                 context.ui.status(
                     t('transact.popup', {default: 'Sign with the Cloud Wallet popup window'})
                 )
-                response = await popupTransact(t, `${this.url}/cloud-wallet/signing/`, resolved)
+                response = await popupTransact(
+                    t,
+                    `${this.url}/cloud-wallet/signing/`,
+                    resolved,
+                    timeout
+                )
             }
         } else {
             // If automatic is not allowed use the popup
             context.ui.status(
                 t('transact.popup', {default: 'Sign with the Cloud Wallet popup window'})
             )
-            response = await popupTransact(t, `${this.url}/cloud-wallet/signing/`, resolved)
+            response = await popupTransact(
+                t,
+                `${this.url}/cloud-wallet/signing/`,
+                resolved,
+                timeout
+            )
         }
 
         // Catch unknown errors where no response is returned
@@ -276,4 +328,8 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
         // Return the response from the API
         return response
     }
+}
+
+function isCallback(object: any): object is WAXCloudWalletSigningResponse {
+    return 'serializedTransaction' in object
 }
