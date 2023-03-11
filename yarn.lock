@@ -551,7 +551,7 @@
     "@typescript-eslint/types" "5.50.0"
     eslint-visitor-keys "^3.3.0"
 
-"@wharfkit/session@^0.3.0":
+"@wharfkit/session@^0.3.2":
   version "0.3.2"
   resolved "https://registry.yarnpkg.com/@wharfkit/session/-/session-0.3.2.tgz#98e946d028434a37b5038da995c12eed72c1f3e2"
   integrity sha512-rxZKL0Vqm9L20l4C/0wwdmoiPlw9Xd0TQNLax7ZcJB3qsZ4nK+GRlynLfcoM3WppGCL/I5uQ8g/2csFEl0U0pg==
