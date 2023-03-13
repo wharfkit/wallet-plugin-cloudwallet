@@ -1,0 +1,17 @@
+{
+    "connecting": "正在连接到云钱包",
+    "error": {
+        "closed": "云钱包在请求完成之前已关闭",
+        "endpoint": "登录端点错误 {{status}} - {{statusText}}",
+        "exception": "发生签名异常：{{exception}}",
+        "popup": "无法打开弹出窗口。请检查您的浏览器设置，然后重试。",
+        "response": "云钱包响应失败",
+        "timeout": "请求在 {{timeout}} 秒后超时。请重试。"
+    },
+    "login": {
+        "popup": "使用云钱包弹出窗口登录"
+    },
+    "transact": {
+        "popup": "使用云钱包弹出窗口签名"
+    }
+}
