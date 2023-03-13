@@ -1,0 +1,17 @@
+{
+    "connecting": "Connecting to Cloud Wallet",
+    "error": {
+        "closed": "The Cloud Wallet was closed before the request was completed",
+        "endpoint": "Login Endpoint Error {{status}} - {{statusText}}",
+        "exception": "Signing exception occurred: {{exception}}",
+        "popup": "Unable to open the popup window. Check your browser settings and try again.",
+        "response": "The Cloud Wallet failed to respond.",
+        "timeout": "The request has timed out after {{timeout}} seconds. Please try again."
+    },
+    "login": {
+        "popup": "Login with the Cloud Wallet popup window"
+    },
+    "transact": {
+        "popup": "Sign with the Cloud Wallet popup window"
+    }
+}

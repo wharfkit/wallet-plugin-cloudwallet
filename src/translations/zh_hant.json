@@ -1,0 +1,17 @@
+{
+    "connecting": "正在連接到雲錢包",
+    "error": {
+        "closed": "雲錢包在請求完成之前已關閉",
+        "endpoint": "登錄端點錯誤 {{status}} - {{statusText}}",
+        "exception": "發生簽名異常：{{exception}}",
+        "popup": "無法打開彈出窗口。 請檢查您的瀏覽器設置，然後重試。",
+        "response": "雲錢包響應失敗",
+        "timeout": "請求在 {{timeout}} 秒後超時。請重試。"
+    },
+    "login": {
+        "popup": "使用雲錢包彈出窗口登錄"
+    },
+    "transact": {
+        "popup": "使用雲錢包彈出窗口簽名"
+    }
+}

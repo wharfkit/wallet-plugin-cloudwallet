@@ -22,7 +22,7 @@ import {autoLogin, popupLogin} from './login'
 import {allowAutosign, autoSign, popupTransact} from './sign'
 import {WAXCloudWalletLoginResponse, WAXCloudWalletSigningResponse} from './types'
 import {validateModifications} from './utils'
-import defaultTranslations from './translations.json'
+import defaultTranslations from './translations'
 
 export interface WalletPluginCloudWalletOptions {
     supportedChains?: string[]
