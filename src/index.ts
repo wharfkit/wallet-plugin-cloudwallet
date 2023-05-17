@@ -117,13 +117,9 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
         let response: WAXCloudWalletLoginResponse
         try {
             // Attempt automatic login
-            context.ui.status(t('connecting', {default: 'Connecting to Cloud Wallet'}))
             response = await autoLogin(t, `${this.autoUrl}/login`)
         } catch (e) {
             // Fallback to popup login
-            context.ui.status(
-                t('login.popup', {default: 'Login with the Cloud Wallet popup window'})
-            )
             response = await popupLogin(t, `${this.url}/cloud-wallet/login/`)
         }
 
@@ -281,13 +277,9 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
         if (allowAutosign(resolved, this.data)) {
             try {
                 // Try automatic signing
-                context.ui.status(t('connecting', {default: 'Connecting to Cloud Wallet'}))
                 response = await autoSign(t, `${this.autoUrl}/signing`, resolved)
             } catch (e) {
                 // Fallback to poup signing
-                context.ui.status(
-                    t('transact.popup', {default: 'Sign with the Cloud Wallet popup window'})
-                )
                 response = await popupTransact(
                     t,
                     `${this.url}/cloud-wallet/signing/`,
@@ -297,9 +289,6 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
             }
         } else {
             // If automatic is not allowed use the popup
-            context.ui.status(
-                t('transact.popup', {default: 'Sign with the Cloud Wallet popup window'})
-            )
             response = await popupTransact(
                 t,
                 `${this.url}/cloud-wallet/signing/`,
