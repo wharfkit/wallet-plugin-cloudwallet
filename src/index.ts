@@ -2,6 +2,7 @@ import {
     AbstractWalletPlugin,
     cancelable,
     Cancelable,
+    ChainId,
     LoginContext,
     PermissionLevel,
     PromptResponse,
@@ -246,12 +247,20 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
                 if (!responseTransaction.equals(resolved.transaction)) {
                     // Evalutate whether modifications are valid, if not throw error
                     validateModifications(resolved.transaction, responseTransaction)
-                    // If changed, add the modified request returned by WCW to the response
-                    result.request = await SigningRequest.create(
+                    // If transaction modified, return a new resolved request to Wharf
+                    const request = await SigningRequest.create(
                         {
                             transaction: responseTransaction,
                         },
                         context.esrOptions
+                    )
+                    // Created a resolved request
+                    result.resolved = new ResolvedSigningRequest(
+                        request,
+                        context.permissionLevel,
+                        Transaction.from(responseTransaction),
+                        Serializer.objectify(Transaction.from(responseTransaction)),
+                        ChainId.from(context.chain.id)
                     )
                 }
             }
