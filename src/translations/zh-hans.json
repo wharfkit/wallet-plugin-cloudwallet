@@ -5,7 +5,7 @@
         "endpoint": "登录端点错误 {{status}} - {{statusText}}",
         "exception": "发生签名异常：{{exception}}",
         "popup": "无法打开弹出窗口。请检查您的浏览器设置，然后重试。",
-        "response": "云钱包响应失败",
+        "response": "云钱包响应失败。",
         "timeout": "请求在 {{timeout}} 秒后超时。请重试。"
     },
     "login": {
