@@ -1,7 +1,7 @@
 {
     "name": "@wharfkit/wallet-plugin-cloudwallet",
     "description": "A WalletPlugin for the WAX Cloud Wallet for use within the @wharfkit/session.",
-    "version": "0.5.1",
+    "version": "1.0.0",
     "homepage": "https://github.com/wharfkit/wallet-plugin-cloudwallet",
     "license": "BSD-3-Clause",
     "main": "lib/wallet-plugin-cloudwallet.js",
