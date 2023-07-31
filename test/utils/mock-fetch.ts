@@ -2,7 +2,7 @@ import fetch, {Response} from 'node-fetch'
 import {join as joinPath} from 'path'
 import {promisify} from 'util'
 import {readFile as _readFile, writeFile as _writeFile} from 'fs'
-import {Bytes, Checksum160} from '@greymass/eosio'
+import {Bytes, Checksum160} from '@wharfkit/antelope'
 
 const readFile = promisify(_readFile)
 const writeFile = promisify(_writeFile)

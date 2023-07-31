@@ -212,17 +212,6 @@
     minimatch "^3.1.2"
     strip-json-comments "^3.1.1"
 
-"@greymass/eosio@^0.6.0", "@greymass/eosio@^0.6.10":
-  version "0.6.10"
-  resolved "https://registry.yarnpkg.com/@greymass/eosio/-/eosio-0.6.10.tgz#20028c2f71da8c071e0a78959904660fa54e1182"
-  integrity sha512-lgml9eAR85q1s3cDSFiipK1XensUASpBWPU6vu3FRDot0CBOC46kHnNWXjF9p+/jI2TzxFqPVU185ZxzC9Q3mw==
-  dependencies:
-    bn.js "^4.11.9"
-    brorand "^1.1.0"
-    elliptic "^6.5.4"
-    hash.js "^1.0.0"
-    tslib "^2.0.3"
-
 "@humanwhocodes/config-array@^0.11.8":
   version "0.11.8"
   resolved "https://registry.yarnpkg.com/@humanwhocodes/config-array/-/config-array-0.11.8.tgz#03595ac2075a4dc0f191cc2131de14fbd7d410b9"
@@ -551,15 +540,53 @@
     "@typescript-eslint/types" "5.50.0"
     eslint-visitor-keys "^3.3.0"
 
-"@wharfkit/session@^0.5.0":
-  version "0.5.0"
-  resolved "https://registry.yarnpkg.com/@wharfkit/session/-/session-0.5.0.tgz#8003c9c2eefd9335331623ceee2f3c02e5dbce40"
-  integrity sha512-UhOUMmhRkljDTrJrPoD/APfEmA9V1iMNuH1ZqqN1CmQgZ7Jz/6FnR7Ams7peEaxAIVP1bY/GN1lie98+8CEL8g==
+"@wharfkit/abicache@^1.1.1":
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@wharfkit/abicache/-/abicache-1.1.1.tgz#03624d03d9466e7def278786aaf074d274fc5650"
+  integrity sha512-CfpHzCLxFATcfReqdJDUxEDSHIeBF3jFx0cP8RcTDyhC2jX4cd+Q/wqjw/kCni3xrBM7cIGUp9c9NZdvdTK9Cg==
   dependencies:
-    "@greymass/eosio" "^0.6.10"
-    eosio-signing-request "^2.5.3"
+    "@wharfkit/antelope" "^0.7.3"
+    "@wharfkit/signing-request" "^3.0.0"
     pako "^2.0.4"
     tslib "^2.1.0"
+
+"@wharfkit/antelope@^0.7.3":
+  version "0.7.3"
+  resolved "https://registry.yarnpkg.com/@wharfkit/antelope/-/antelope-0.7.3.tgz#408f6c587f4f5990d4b55596c10be2e976798641"
+  integrity sha512-pyUmuXUpLQh1RVpJVIcbVUHTwV/DQ+MI0nlfWDBHIICdYf6XidZtQmaHB7JEXiFzlS8T7S9Xc5VOTOQU8dnl3Q==
+  dependencies:
+    bn.js "^4.11.9"
+    brorand "^1.1.0"
+    elliptic "^6.5.4"
+    hash.js "^1.0.0"
+    tslib "^2.0.3"
+
+"@wharfkit/common@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@wharfkit/common/-/common-1.1.0.tgz#1ee9dd1ba9e202002fadd20593f5f42a3e67c827"
+  integrity sha512-A1Ta8zrEXkuEQcEiEexG0BVrYOxqm75qbLYU9tGNhyw4z/vQiF6rzmCOqhmWGg6nE2J2GYPvrPZPZzDmRGtG+w==
+  dependencies:
+    tslib "^2.1.0"
+
+"@wharfkit/session@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@wharfkit/session/-/session-1.0.0.tgz#09c60d01a6185ab2e451d34462d84de2d7013220"
+  integrity sha512-wXmvOVBZ1Rp/9HPUzGPaD/vpGXv2FCNgl8JRLopKgKPHkkEX/u4untshHR8AwSc0ZitjOlv6ubR2h9/UW8h6ug==
+  dependencies:
+    "@wharfkit/abicache" "^1.1.1"
+    "@wharfkit/antelope" "^0.7.3"
+    "@wharfkit/common" "^1.1.0"
+    "@wharfkit/signing-request" "^3.0.0"
+    pako "^2.0.4"
+    tslib "^2.1.0"
+
+"@wharfkit/signing-request@^3.0.0":
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/@wharfkit/signing-request/-/signing-request-3.0.0.tgz#3464cdc76c0690ab241d805116101e3ed63ba846"
+  integrity sha512-+9UaznhYlZSgdZGG/LF5GkH7P9dCVh+b32cR1PYHKG6KuOsPlLqfv1DuWkqsxQyi3kGT1fXG1i8sl39ItgwLzg==
+  dependencies:
+    "@wharfkit/antelope" "^0.7.3"
+    tslib "^2.0.3"
 
 "@yarnpkg/lockfile@^1.1.0":
   version "1.1.0"
@@ -1014,14 +1041,6 @@ emoji-regex@^8.0.0:
   version "8.0.0"
   resolved "https://registry.yarnpkg.com/emoji-regex/-/emoji-regex-8.0.0.tgz#e818fd69ce5ccfcb404594f842963bf53164cc37"
   integrity sha512-MSjYzcWNOA0ewAHpz0MxpYFvwg6yjy1NG3xteoqz644VCo/RPgnr1/GGt+ic3iJTzQ8Eu3TdM14SawnVUmGE6A==
-
-eosio-signing-request@^2.5.3:
-  version "2.5.3"
-  resolved "https://registry.yarnpkg.com/eosio-signing-request/-/eosio-signing-request-2.5.3.tgz#4b15bcc67d2814393a83084c45e4473d638b16e1"
-  integrity sha512-jb4cKjQM+NI8+JwtGClYiCDX9sgSeUreRTE7YkIAga0fo21vtLTjTn0ZUH1zyfQU5b4Drdcs/yUMXdPUtqp9bg==
-  dependencies:
-    "@greymass/eosio" "^0.6.0"
-    tslib "^2.0.3"
 
 es6-error@^4.0.1:
   version "4.1.1"
