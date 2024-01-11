@@ -190,17 +190,23 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
         // Perform WAX Cloud Wallet signing
         const callbackPromise = this.getWalletResponse(resolved, context, t, timeout)
 
-        // Tell Wharf we need to prompt the user with a countdown
-        const promptPromise: Cancelable<PromptResponse> = context.ui.prompt({
-            title: 'Sign',
-            body: `Please complete the transaction using the Cloud Wallet popup window.`,
-            elements: [
-                {
-                    type: 'countdown',
-                    data: expiration.toISOString(),
-                },
-            ],
-        })
+        let promptPromise: Cancelable<PromptResponse> = cancelable(new Promise(() => {}))
+        if (!allowAutosign(resolved, this.data)) {
+            // Tell Wharf we need to prompt the user with a countdown
+            promptPromise = context.ui.prompt({
+                title: 'Sign',
+                body: `Please complete the transaction using the Cloud Wallet popup window.`,
+                elements: [
+                    {
+                        type: 'countdown',
+                        data: expiration.toISOString(),
+                    },
+                ],
+            })
+
+            // Clear the timeout if the UI throws (which generally means it closed)
+            promptPromise.catch(() => clearTimeout(timer))
+        }
 
         // Create a timer to test the external cancelation of the prompt, if defined
         const timer = setTimeout(() => {
@@ -209,9 +215,6 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
             }
             promptPromise.cancel('The request expired, please try again.')
         }, timeout)
-
-        // Clear the timeout if the UI throws (which generally means it closed)
-        promptPromise.catch(() => clearTimeout(timer))
 
         // Wait for either the callback or the prompt to resolve
         const callbackResponse = await Promise.race([callbackPromise, promptPromise]).finally(
