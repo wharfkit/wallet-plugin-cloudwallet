@@ -3,6 +3,7 @@ import {
     cancelable,
     Cancelable,
     ChainId,
+    IdentityProof,
     LoginContext,
     PermissionLevel,
     PromptResponse,
@@ -17,6 +18,9 @@ import {
     WalletPluginLoginResponse,
     WalletPluginMetadata,
     WalletPluginSignResponse,
+    Name,
+    TimePointSec,
+    Signature,
 } from '@wharfkit/session'
 
 import {autoLogin, popupLogin} from './login'
@@ -114,14 +118,19 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
 
         // Retrieve translation helper from the UI, passing the app ID
         const t = context.ui.getTranslate(this.id)
+        
+        // TODO: The nonce should be generate on the BE side. 
+        const nonce = `${context.appName}-${new Date().getTime()}`
+        const base64Nonce = btoa(nonce)
+        console.log({nonce, base64Nonce})
 
         let response: WAXCloudWalletLoginResponse
         try {
             // Attempt automatic login
-            response = await autoLogin(t, `${this.autoUrl}/login`)
+            response = await autoLogin(t, `${this.autoUrl}/login?n=${base64Nonce}`)
         } catch (e) {
             // Fallback to popup login
-            response = await popupLogin(t, `${this.url}/cloud-wallet/login/`)
+            response = await popupLogin(t, `${this.url}/cloud-wallet/login?n=${base64Nonce}`)
         }
 
         // If failed due to no response or no verified response, throw error
@@ -139,7 +148,7 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
 
         // Save our whitelisted contracts
         this.data.whitelist = response.whitelistedContracts
-
+        const signature = (response as any)?.proof?.data?.signature
         return new Promise((resolve) => {
             if (!context.chain) {
                 throw new Error('A chain must be selected to login with.')
@@ -151,6 +160,18 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
                     actor: response.userAccount,
                     permission: 'active',
                 }),
+                identityProof:
+                    signature &&
+                    IdentityProof.from({
+                        chainId: ChainId.from(context?.chain?.id),
+                        scope: Name.from(context.appName || ''),
+                        expiration: TimePointSec.from(new Date().getTime() / 1000 + 60 * 60),
+                        signer: PermissionLevel.from({
+                            actor: response.userAccount,
+                            permission: 'active',
+                        }),
+                        signature: Signature.from((response as any)?.proof?.data?.signature),
+                    }),
             })
         })
     }
