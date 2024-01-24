@@ -118,9 +118,8 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
 
         // Retrieve translation helper from the UI, passing the app ID
         const t = context.ui.getTranslate(this.id)
-        
-        // TODO: The nonce should be generate on the BE side. 
-        const nonce = `${context.appName}-${new Date().getTime()}`
+
+        const nonce = context.arbitrary['nonce']
         const base64Nonce = btoa(nonce)
         console.log({nonce, base64Nonce})
 
