@@ -121,7 +121,6 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
 
         const nonce = context.arbitrary['nonce']
         const base64Nonce = btoa(nonce)
-        console.log({nonce, base64Nonce})
 
         let response: WAXCloudWalletLoginResponse
         try {
