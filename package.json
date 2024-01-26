@@ -19,7 +19,7 @@
         "tslib": "^2.1.0"
     },
     "peerDependencies": {
-        "@wharfkit/session": "^1.2.2"
+        "@wharfkit/session": "^1.2.7"
     },
     "devDependencies": {
         "@rollup/plugin-alias": "^3.1.4",
