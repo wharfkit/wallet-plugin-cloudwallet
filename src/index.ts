@@ -244,14 +244,6 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
         )
 
         if (isCallback(callbackResponse)) {
-            // Determine if there are any fees to accept
-            const hasFees = callbackResponse.waxFee || callbackResponse.ramFee
-            if (hasFees) {
-                throw new Error(
-                    'The transaction requires a fee, and the fee interface is not yet implemented.'
-                )
-            }
-
             // The response to return to the Session Kit
             const result: WalletPluginSignResponse = {
                 signatures: callbackResponse.signatures,
