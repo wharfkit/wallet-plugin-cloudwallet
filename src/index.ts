@@ -52,7 +52,7 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
      */
     readonly config: WalletPluginConfig = {
         // Should the user interface display a chain selector?
-        requiresChainSelect: true,
+        requiresChainSelect: false,
         // Should the user interface display a permission selector?
         requiresPermissionSelect: false,
         // The blockchains this WalletPlugin supports
@@ -215,6 +215,7 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
             promptPromise = context.ui.prompt({
                 title: 'Sign',
                 body: `Please complete the transaction using the Cloud Wallet popup window.`,
+                optional: true,
                 elements: [
                     {
                         type: 'countdown',
@@ -240,6 +241,7 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
             () => {
                 // Clear the automatic timeout once the race resolves
                 clearTimeout(timer)
+                promptPromise.cancel()
             }
         )
 
