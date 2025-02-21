@@ -34,6 +34,7 @@ export interface WalletPluginCloudWalletOptions {
     url?: string
     autoUrl?: string
     loginTimeout?: number
+    allowTemp?: boolean
 }
 
 export class WalletPluginCloudWallet extends AbstractWalletPlugin implements WalletPlugin {
@@ -79,7 +80,7 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
     public url = 'https://www.mycloudwallet.com'
     public autoUrl = 'https://idm-api.mycloudwallet.com/v1/accounts/auto-accept'
     public loginTimeout = 300000 // 5 minutes
-
+    public allowTemp = false
     /**
      * Constructor to allow overriding of plugin configuration.
      */
@@ -96,6 +97,9 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
         }
         if (options?.loginTimeout) {
             this.loginTimeout = options.loginTimeout
+        }
+        if (options?.allowTemp) {
+            this.allowTemp = options.allowTemp
         }
     }
 
@@ -125,10 +129,16 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
         let response: WAXCloudWalletLoginResponse
         try {
             // Attempt automatic login
-            response = await autoLogin(t, `${this.autoUrl}/login?n=${base64Nonce}`)
+            response = await autoLogin(
+                t,
+                `${this.autoUrl}/login?n=${base64Nonce}&returnTemp=${this.allowTemp}`
+            )
         } catch (e) {
             // Fallback to popup login
-            response = await popupLogin(t, `${this.url}/cloud-wallet/login?n=${base64Nonce}`)
+            response = await popupLogin(
+                t,
+                `${this.url}/cloud-wallet/login?n=${base64Nonce}&returnTemp=${this.allowTemp}`
+            )
         }
 
         // If failed due to no response or no verified response, throw error
@@ -146,6 +156,7 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
 
         // Save our whitelisted contracts
         this.data.whitelist = response.whitelistedContracts
+        this.data.isTempAccount = response.isTemp
         const signature = (response as any)?.proof?.data?.signature
         return new Promise((resolve) => {
             if (!context.chain) {
