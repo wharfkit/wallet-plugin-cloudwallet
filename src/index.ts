@@ -149,7 +149,7 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
             elements.push({
                 type: 'button',
                     data: {
-                    label: 'Open My Cloud Wallet app v64-debug-3',
+                    label: 'Open My Cloud Wallet app',
                     variant: 'primary',
                     onClick: async () => {
                         try {
