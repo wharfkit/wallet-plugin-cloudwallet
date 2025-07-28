@@ -423,9 +423,12 @@ export function decodeSignatureFromWallet(encoded: string) {
     base64 += '=';
   }
 
-  // Decode base64
-  const jsonStr = Buffer.from(base64, 'base64').toString('utf-8');
-
-  // Parse JSON
-  return JSON.parse(jsonStr);
+  // Decode base64 using browser-compatible method
+  try {
+    const jsonStr = atob(base64);
+    return JSON.parse(jsonStr);
+  } catch (error) {
+    console.error('Failed to decode signature from wallet:', error);
+    throw new Error('Invalid signature format');
+  }
 }
