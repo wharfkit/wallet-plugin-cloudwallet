@@ -17,6 +17,9 @@ export async function autoLogin(
     const response = await fetch(String(url), {
         credentials: 'include',
         method: 'get',
+        headers: {
+            'X-Referer-Url': location.origin,
+        },
     })
     if (!response.ok) {
         throw new Error(
