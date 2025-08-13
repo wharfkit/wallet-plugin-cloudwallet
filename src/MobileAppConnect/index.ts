@@ -575,7 +575,9 @@ export class MobileAppConnect {
         const encodeTransactions = btoa(JSON.stringify(completeTransaction));
         const callbackUrl = btoa(generateReturnUrl() || '');
         const deviceHash = encodeURIComponent('1234567890');
-        this.uuid = uuidv4();
+        
+        // Generate a unique UUID for this specific transaction to prevent conflicts
+        const transactionUuid = uuidv4();
 
         // Build the deep link URL with organized parameters
         const linkParams = new URLSearchParams({
@@ -584,7 +586,7 @@ export class MobileAppConnect {
             callbackHttp: callbackUrl,
             redirect: 'true',
             deviceHash: deviceHash,
-            uuid: this.uuid,
+            uuid: transactionUuid,
             broadcast: 'false'
         });
 
@@ -613,7 +615,7 @@ export class MobileAppConnect {
 
             const transact = async () => {
                 try {
-                    const re = await events.connect(`/device-transact/${this.uuid}`, { authToken: this.uuid });
+                    const re = await events.connect(`/device-transact/${transactionUuid}`, { authToken: transactionUuid });
                     subscription = re.subscribe({
                         next: (data) => {
                             if (data?.type === 'data' && data?.event?.signatures) {                                                                
