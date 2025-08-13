@@ -569,10 +569,15 @@ export class MobileAppConnect {
             throw new Error('Invalid connection type, expect direct connection');
         }
 
-        const encodeTransactions = btoa(JSON.stringify(resolved.request.getRawActions()));
+        // FIX: Send the complete serialized transaction as a single action string
+        // This preserves the original transaction structure while working with mobile app
+        const completeTransaction = Array.from(resolved.serializedTransaction);
+        const encodeTransactions = btoa(JSON.stringify(completeTransaction));
         const callbackUrl = btoa(generateReturnUrl() || '');
         const deviceHash = encodeURIComponent('1234567890');
-        this.uuid = uuidv4();
+        
+        // Generate a unique UUID for this specific transaction to prevent conflicts
+        const transactionUuid = uuidv4();
 
         // Build the deep link URL with organized parameters
         const linkParams = new URLSearchParams({
@@ -581,7 +586,7 @@ export class MobileAppConnect {
             callbackHttp: callbackUrl,
             redirect: 'true',
             deviceHash: deviceHash,
-            uuid: this.uuid,
+            uuid: transactionUuid,
             broadcast: 'false'
         });
 
@@ -610,48 +615,34 @@ export class MobileAppConnect {
 
             const transact = async () => {
                 try {
-                    const re = await events.connect(`/device-transact/${this.uuid}`, { authToken: this.uuid });
+                    const re = await events.connect(`/device-transact/${transactionUuid}`, { authToken: transactionUuid });
                     subscription = re.subscribe({
                         next: (data) => {
                             if (data?.type === 'data' && data?.event?.signatures) {                                                                
                                 const signatures = decodeSignatureFromWallet(data.event.signatures);
-                                            // If a transaction was returned by the WCW
+                                // FIX: Only return signatures for the original transaction
+                                // Do not create a new resolved request if transaction was modified
+                                const result: WalletPluginSignResponse = {
+                                    signatures,
+                                }
+                                
+                                // If a modified transaction was returned, validate it but don't create new resolved request
                                 if (data.event.serializedTransaction) {
-                                    // Convert the serialized transaction from the WCW to a Transaction object
                                     const responseTransaction = Serializer.decode({
                                         data: data.event.serializedTransaction,
                                         type: Transaction,
                                     })
-                                    const result: WalletPluginSignResponse = {
-                                        signatures,
-                                    }
-                                    // Determine if the transaction changed from the requested transaction
+                                    
+                                    // Validate modifications but don't create new resolved request
                                     if (!responseTransaction.equals(resolved.transaction)) {
-                                        // Evalutate whether modifications are valid, if not throw error
                                         validateModifications(resolved.transaction, responseTransaction)
-                                        // If transaction modified, return a new resolved request to Wharf
-                                        SigningRequest.create(
-                                            {
-                                                transaction: responseTransaction,
-                                            },
-                                            context.esrOptions
-                                        ).then((request) => {
-                                            result.resolved = new ResolvedSigningRequest(
-                                                request,
-                                                context.permissionLevel,
-                                                Transaction.from(responseTransaction),
-                                                Serializer.objectify(Transaction.from(responseTransaction)),
-                                                ChainId.from(context.chain.id)
-                                            )
-                                            resolve(result);
-                                            re.close();
-                                        }).catch((err) => {
-                                            cleanup();
-                                            reject(err);
-                                            re.close();
-                                        })
+                                        // FIX: Return signatures for the original transaction, not the modified one
+                                        // This ensures cosigner signatures remain valid
                                     }
                                 }
+                                
+                                resolve(result);
+                                re.close();
                                 return;
                             } else if (data?.event?.error) {
                                 const msg = data.event.error === 'TransactionDeclined'
