@@ -11,17 +11,17 @@ import {
     SigningRequest,
     TransactContext,
     ChainId,
-    WalletPluginSignResponse
+    WalletPluginSignResponse,
 } from '@wharfkit/session'
-import { MobileAppConnectConfig } from '../interfaces';
-import { decodeSignatureFromWallet, generateReturnUrl } from '../helpers';
-import { TransactionSyncHandler, SyncHandlerConfig } from '../SyncHandler';
-import { TransactionMessage } from '../SyncHandler/transaction';
+import {MobileAppConnectConfig} from '../interfaces'
+import {decodeSignatureFromWallet, generateReturnUrl} from '../helpers'
+import {TransactionSyncHandler, SyncHandlerConfig} from '../SyncHandler'
+import {TransactionMessage} from '../SyncHandler/transaction'
 import {events} from 'aws-amplify/data'
 import {validateModifications} from '../utils'
 
-const MCW_CONNECT_UNIVERSAL_LINK = 'https://mycloudwallet.com/connect';
-const MCW_TRANSACT_UNIVERSAL_LINK = 'https://mycloudwallet.com/transact';
+const MCW_CONNECT_UNIVERSAL_LINK = 'https://mycloudwallet.com/connect'
+const MCW_TRANSACT_UNIVERSAL_LINK = 'https://mycloudwallet.com/transact'
 
 declare global {
     interface Window {
@@ -63,6 +63,7 @@ interface ActivatedData {
     isProofVerified?: any
     token: string
     userAccount?: string
+    permission?: string
 }
 
 class ActivationFetchError extends Error {
@@ -102,53 +103,51 @@ class InvalidCodeError extends Error {
 
 export class MobileAppConnect {
     private user?: ILoginResponse
-    private isCanceled: boolean = false;
-    private connectedType: 'direct' | 'remote' | 'web' | null = null;
-    private WAX_SCHEME_DEEPLINK = 'mycloudwallet';
-    private activationEndpoint = 'https://login-api.mycloudwallet.com'    
-    private transactionSyncHandler: TransactionSyncHandler;
+    private isCanceled: boolean = false
+    private connectedType: 'direct' | 'remote' | 'web' | null = null
+    private WAX_SCHEME_DEEPLINK = 'mycloudwallet'
+    private activationEndpoint = 'https://login-api.mycloudwallet.com'
+    private transactionSyncHandler: TransactionSyncHandler
     private dAppInfo: IDappInfo
-    private origin: string;
-    private uuid: string;
+    private origin: string
+    private uuid: string
 
-    constructor(
-        readonly mobileAppConnectConfig: MobileAppConnectConfig
-    ) {
+    constructor(readonly mobileAppConnectConfig: MobileAppConnectConfig) {
         if (!mobileAppConnectConfig || !mobileAppConnectConfig.dappInfo) {
-            throw new Error('MobileAppConnect is required');
+            throw new Error('MobileAppConnect is required')
         }
         this.mobileAppConnectConfig = mobileAppConnectConfig
         this.dAppInfo = mobileAppConnectConfig.dappInfo
-        this.origin = location.origin;
+        this.origin = location.origin
         new SyncHandlerConfig({
             graphQLRelayEndpoint: 'https://queue-relay.mycloudwallet.com/graphql',
             graphQLRelayRegion: 'us-east-2',
             eventRelayEndpoint: 'https://direct-connect-api.mycloudwallet.com/event',
-            eventRelayRegion: 'eu-east-2'
+            eventRelayRegion: 'eu-east-2',
         })
         // Initialize transaction SyncHandler
-        this.transactionSyncHandler = new TransactionSyncHandler();
-        this.uuid = uuidv4();
-        const connectedType = localStorage.getItem('connectedType');
+        this.transactionSyncHandler = new TransactionSyncHandler()
+        this.uuid = uuidv4()
+        const connectedType = localStorage.getItem('connectedType')
         if (connectedType === 'direct' || connectedType === 'remote' || connectedType === 'web') {
-            this.connectedType = connectedType;
+            this.connectedType = connectedType
         }
     }
 
     public getConnectedType(): 'direct' | 'remote' | 'web' | null {
-        return this.connectedType;
+        return this.connectedType
     }
 
     public async showAppConnectPrompt(context: LoginContext) {
         const elements: PromptElement[] = []
         let requisitionInfo: RequisitionInfo | undefined
-        let directConnectPromiseResolve: (value: any) => void;
-        let directConnectPromiseReject: (reason?: any) => void;
-        let checkActivationPromise: Promise<ILoginResponse | void> | undefined = undefined;
+        let directConnectPromiseResolve: (value: any) => void
+        let directConnectPromiseReject: (reason?: any) => void
+        let checkActivationPromise: Promise<ILoginResponse | void> | undefined = undefined
         const directConnectPromise = new Promise((resolve, reject) => {
-            directConnectPromiseResolve = resolve;
-            directConnectPromiseReject = reject;
-        });
+            directConnectPromiseResolve = resolve
+            directConnectPromiseReject = reject
+        })
 
         if (this.mobileAppConnectConfig.remote) {
             requisitionInfo = await this.fetchActivationInfo(this.getActivationPayload(context))
@@ -165,12 +164,12 @@ export class MobileAppConnect {
                     variant: 'primary',
                     onClick: async () => {
                         try {
-                            const result = await this.directConnect(context); // Wait for deeplink response
-                            directConnectPromiseResolve(result);       // Resolve outer promise
+                            const result = await this.directConnect(context) // Wait for deeplink response
+                            directConnectPromiseResolve(result) // Resolve outer promise
                         } catch (error) {
-                            directConnectPromiseReject(error);
+                            directConnectPromiseReject(error)
                         }
-                    }
+                    },
                 },
             })
         }
@@ -180,135 +179,144 @@ export class MobileAppConnect {
             body: 'Connect My Cloud Wallet on your mobile device',
             elements,
         })
-        currentPromptResponse.catch((error:any) => {
+        currentPromptResponse.catch((error: any) => {
             console.info('User cancelled modal::', error.message)
             directConnectPromiseReject(error)
-            this.isCanceled = true;
+            this.isCanceled = true
         })
         // No longer waiting for prompt — go straight to activation
         if (requisitionInfo) {
-            checkActivationPromise = this.checkActivation(
-                context,
-                requisitionInfo
-            )
+            checkActivationPromise = this.checkActivation(context, requisitionInfo)
         }
         try {
             if (checkActivationPromise) {
-                return await Promise.race([
-                    directConnectPromise,
-                    checkActivationPromise])
+                return await Promise.race([directConnectPromise, checkActivationPromise])
             } else {
-                return await directConnectPromise;
+                return await directConnectPromise
             }
         } catch (error) {
-            console.log('showAppConnectPrompt::directConnectPromise::error', error);
+            console.log('showAppConnectPrompt::directConnectPromise::error', error)
             if (error instanceof ActivationCancelledError) {
-                console.log('currentPromptResponse', typeof currentPromptResponse);
+                console.log('currentPromptResponse', typeof currentPromptResponse)
                 //context.ui.onLoginComplete;
-                this.isCanceled = true;
-                this.connectedType = null;
+                this.isCanceled = true
+                this.connectedType = null
             }
-            throw error;
+            throw error
         }
     }
 
-    public remoteTransact(resolved: ResolvedSigningRequest, context: TransactContext, namedParams: any): Promise<{signatures: any[]}> {
+    public remoteTransact(
+        resolved: ResolvedSigningRequest,
+        context: TransactContext,
+        namedParams: any
+    ): Promise<{signatures: any[]}> {
         if (!this.user?.account || !this.user?.token) {
-            throw new Error('User not authenticated');
+            throw new Error('User not authenticated')
         }
 
-        const channelName = this.transactionSyncHandler.generateChannelName(this.origin, this.user.account);
-        const txInfo = this.transactionSyncHandler.generateTransactionMessage(resolved.request.getRawActions(), namedParams, this.origin);
-        
-        const authHeaders: string = TransactionSyncHandler.parseAuthHeaders(this.user.account, this.user.token, this.origin)
-        
+        const channelName = this.transactionSyncHandler.generateChannelName(
+            this.origin,
+            this.user.account
+        )
+        const txInfo = this.transactionSyncHandler.generateTransactionMessage(
+            resolved.request.getRawActions(),
+            namedParams,
+            this.origin
+        )
+
+        const authHeaders: string = TransactionSyncHandler.parseAuthHeaders(
+            this.user.account,
+            this.user.token,
+            this.origin
+        )
+
         return new Promise((resolve, reject) => {
-            let subscription;
-            const currentTxInfo = txInfo;
+            let subscription
+            const currentTxInfo = txInfo
             console.log(
                 `start listening on ${channelName} with transaction ID = ${currentTxInfo.id}...`
-            );
+            )
 
             // Publish transaction request
-            this.transactionSyncHandler.publishToChannel(channelName, txInfo, authHeaders)
-                .catch(error => {
-                    console.error('Failed to publish to channel:', error);
-                    reject(error);
-                });
+            this.transactionSyncHandler
+                .publishToChannel(channelName, txInfo, authHeaders)
+                .catch((error) => {
+                    console.error('Failed to publish to channel:', error)
+                    reject(error)
+                })
 
             // Subscribe to channel for response
             subscription = this.transactionSyncHandler.subscribeToChannel<TransactionMessage>(
                 channelName,
                 (message) => {
                     if (message.id !== currentTxInfo.id) {
-                        return;
+                        return
                     }
 
                     switch (message.type) {
                         case 'requesting':
-                            console.log('tx requesting...');
-                            break;
+                            console.log('tx requesting...')
+                            break
                         case 'approved':
                             try {
-                                const result = this.transactionSyncHandler.processTransactionResult(message);
-                                resolve(result);
+                                const result =
+                                    this.transactionSyncHandler.processTransactionResult(message)
+                                resolve(result)
                             } catch (error) {
-                                console.error('Failed to process transaction result:', error);
-                                reject(error);
+                                console.error('Failed to process transaction result:', error)
+                                reject(error)
                             }
-                            break;
+                            break
                         case 'rejected':
-                            reject(new Error('User rejected the transaction'));
-                            break;
+                            reject(new Error('User rejected the transaction'))
+                            break
                         case 'error':
-                            reject(new Error(message.result));
-                            break;
+                            reject(new Error(message.result))
+                            break
                         default:
-                            console.log(`Unknown status: ${JSON.stringify(message)}`);
-                            break;
+                            console.log(`Unknown status: ${JSON.stringify(message)}`)
+                            break
                     }
                 },
                 (error) => {
-                    console.error('Subscription error:', error);
-                    reject(error);
+                    console.error('Subscription error:', error)
+                    reject(error)
                 },
                 authHeaders
-            );
+            )
 
             // Cleanup subscription on completion
             return {
                 unsubscribe: () => {
-                    subscription?.unsubscribe();
-                }
-            };
-        });
+                    subscription?.unsubscribe()
+                },
+            }
+        })
     }
-    
 
-    public async signTransaction(resolved: ResolvedSigningRequest, context: TransactContext, namedParams: any) : Promise<any> {
+    public async signTransaction(
+        resolved: ResolvedSigningRequest,
+        context: TransactContext,
+        namedParams: any
+    ): Promise<any> {
         if (!this.connectedType || this.connectedType === 'web') {
-            throw new Error('Activation_NotActivated!!!');
+            throw new Error('Activation_NotActivated!!!')
         }
         if (this.connectedType === 'direct') {
-            return await this.directTransact(resolved, context, namedParams);
+            return await this.directTransact(resolved, context, namedParams)
         } else {
-            return this.remoteTransact(resolved, context, namedParams);
+            return this.remoteTransact(resolved, context, namedParams)
         }
     }
 
-    private async checkActivation(
-        context: LoginContext,
-        requisitionInfo: RequisitionInfo
-    ) {
+    private async checkActivation(context: LoginContext, requisitionInfo: RequisitionInfo) {
         try {
-            const activatedData = await this.checkIfActivated(
-                requisitionInfo,
-                this.origin
-            )
+            const activatedData = await this.checkIfActivated(requisitionInfo, this.origin)
             if (!!activatedData) {
                 this.user = activatedData
-                this.connectedType = 'remote';
-                context.ui.onLoginComplete();
+                this.connectedType = 'remote'
+                context.ui.onLoginComplete()
                 return this.user
             }
         } catch (error) {
@@ -339,7 +347,8 @@ export class MobileAppConnect {
                 headers: {
                     'Content-Type': 'application/json',
                     'X-dapp-sdk-sut': sut.toString(),
-                    'X-dapp-sdk-client-id': this.mobileAppConnectConfig.remote.dappClientId.toString(),
+                    'X-dapp-sdk-client-id':
+                        this.mobileAppConnectConfig.remote.dappClientId.toString(),
                 },
                 body: JSON.stringify({
                     dapp: origin,
@@ -370,7 +379,7 @@ export class MobileAppConnect {
         return new Promise<ActivatedData>((resolve, reject) => {
             const intervalId = setInterval(async () => {
                 const currentTimestamp = Math.floor(Date.now() / 1000)
-                if(this.user || this.isCanceled) {
+                if (this.user || this.isCanceled) {
                     clearInterval(intervalId)
                 }
                 if (currentTimestamp > requisitionInfo.expire) {
@@ -406,7 +415,7 @@ export class MobileAppConnect {
                         throw new Error(`Network response was not ok: ${response.status}`)
                     }
 
-                    const data = await response.json()      
+                    const data = await response.json()
 
                     if (response.status === 202) {
                         console.log('Continuing pulling checkActivation')
@@ -431,7 +440,7 @@ export class MobileAppConnect {
     private getActivationPayload(context: LoginContext) {
         return {
             origin: this.origin,
-            dAppName: `${this.dAppInfo.name ||context.appName}`,
+            dAppName: `${this.dAppInfo.name || context.appName}`,
             logourl: this.dAppInfo.logoUrl,
             schema: this.dAppInfo.schema,
             description: this.dAppInfo.description,
@@ -441,29 +450,33 @@ export class MobileAppConnect {
     private openDeepLinkWithFallback(link: string): Promise<void> {
         return new Promise((resolve, reject) => {
             const timeoutId = setTimeout(() => {
-            reject(new ActivationDeepLinkError('App likely not installed, fallback triggered.'));
-            }, 4000);
+                reject(new ActivationDeepLinkError('App likely not installed, fallback triggered.'))
+            }, 4000)
             const clear = () => {
-                clearTimeout(timeoutId);
-                resolve();
-            };
-            window.addEventListener('pagehide', clear, { once: true });
-            window.addEventListener('blur', clear, { once: true });
-            document.addEventListener('visibilitychange', () => {
-                if (document.visibilityState === 'hidden') {
-                  clear();
-                }
-              }, { once: true });
-            
-            window.location.href = link;
-        });
+                clearTimeout(timeoutId)
+                resolve()
+            }
+            window.addEventListener('pagehide', clear, {once: true})
+            window.addEventListener('blur', clear, {once: true})
+            document.addEventListener(
+                'visibilitychange',
+                () => {
+                    if (document.visibilityState === 'hidden') {
+                        clear()
+                    }
+                },
+                {once: true}
+            )
+
+            window.location.href = link
+        })
     }
 
     public async directConnect(context: LoginContext): Promise<ILoginResponse | void> {
-        const callbackUrl = btoa(generateReturnUrl() || '');
-        const deviceHash = encodeURIComponent('1234567890');
-        this.uuid = uuidv4();
-    
+        const callbackUrl = btoa(generateReturnUrl() || '')
+        const deviceHash = encodeURIComponent('1234567890')
+        this.uuid = uuidv4()
+
         // Build the deep link URL with organized parameters
         const linkParams = new URLSearchParams({
             schema: this.dAppInfo.schema || 'none',
@@ -475,109 +488,117 @@ export class MobileAppConnect {
             callbackHttp: callbackUrl,
             uuid: this.uuid,
             deviceHash: deviceHash,
-        });
+        })
 
         const nonce = context.arbitrary['nonce']
         // conditionally add non-falsy nonce to the link
         if (nonce) {
             const base64Nonce = btoa(nonce)
-            linkParams.set('n', base64Nonce);
+            linkParams.set('n', base64Nonce)
         }
 
-        const link = `${this.WAX_SCHEME_DEEPLINK}://connect?${linkParams.toString()}`;
-    
+        const link = `${this.WAX_SCHEME_DEEPLINK}://connect?${linkParams.toString()}`
+
         try {
-            await this.openDeepLinkWithFallback(link);
+            await this.openDeepLinkWithFallback(link)
         } catch (error) {
-            console.error('Failed to open deeplink:', error);
-            throw error;
+            console.error('Failed to open deeplink:', error)
+            throw error
         }
-    
+
         return new Promise(async (resolve, reject) => {
             const timeout = setTimeout(() => {
-                this.isCanceled = true;
-                cleanup();
-                reject(new Error('Connection timeout'));
-            }, 180000); // 3 min
-    
-            let subscription: any;
-            let interval: any;
+                this.isCanceled = true
+                cleanup()
+                reject(new Error('Connection timeout'))
+            }, 180000) // 3 min
+
+            let subscription: any
+            let interval: any
             const cleanup = () => {
-                clearTimeout(timeout);
-                clearInterval(interval);
-                subscription?.unsubscribe?.();
-            };
-    
+                clearTimeout(timeout)
+                clearInterval(interval)
+                subscription?.unsubscribe?.()
+            }
+
             const connectToDevice = async () => {
                 try {
-                    const re = await events.connect(`/device-connect/${this.uuid}`, { authToken: this.uuid });
+                    const re = await events.connect(`/device-connect/${this.uuid}`, {
+                        authToken: this.uuid,
+                    })
                     subscription = re.subscribe({
                         next: (data) => {
                             if (data?.type === 'data' && data?.event?.accountName) {
                                 this.user = {
                                     account: data.event.accountName,
+                                    permission: data?.event?.permission || 'active',
                                     keys: [],
                                     isTemp: false,
                                     createData: {},
                                     token: '',
-                                    proof: data.event.proof
-                                };
-                                this.connectedType = 'direct';
-                                localStorage.setItem('connectedType', this.connectedType);
-                                cleanup();
-                                resolve(this.user);
-                                re.close();
-                                return;
+                                    proof: data.event.proof,
+                                }
+                                this.connectedType = 'direct'
+                                localStorage.setItem('connectedType', this.connectedType)
+                                cleanup()
+                                resolve(this.user)
+                                re.close()
+                                return
                             } else if (data?.event?.error) {
-                                const msg = data.event.error === 'ConnectRejected'
-                                    ? 'User rejected the connection'
-                                    : 'Direct connection error';
-                                cleanup();
-                                reject(new ActivationCancelledError(msg));
-                                re.close();
-                                return;
+                                const msg =
+                                    data.event.error === 'ConnectRejected'
+                                        ? 'User rejected the connection'
+                                        : 'Direct connection error'
+                                cleanup()
+                                reject(new ActivationCancelledError(msg))
+                                re.close()
+                                return
                             } else {
-                                cleanup();
-                                reject(new Error('Invalid account'));
-                                re.close();
-                                return;
+                                cleanup()
+                                reject(new Error('Invalid account'))
+                                re.close()
+                                return
                             }
                         },
                         error: (err) => {
-                            console.error('Subscription error:', err);
-                            cleanup();
-                            reject(err);
-                            re.close();
-                            return;
-                        }
-                    });
+                            console.error('Subscription error:', err)
+                            cleanup()
+                            reject(err)
+                            re.close()
+                            return
+                        },
+                    })
                 } catch (err) {
-                    cleanup();
-                    reject(err);
+                    cleanup()
+                    reject(err)
                 }
-            };
+            }
             interval = setInterval(() => {
                 if (document.hasFocus()) {
-                    connectToDevice();
+                    connectToDevice()
                 }
-            }, 500);
-        });
-    }    
+            }, 500)
+        })
+    }
 
-    public async directTransact(resolved: ResolvedSigningRequest, context: TransactContext, namedParams: any): Promise<{signatures: any[]}> {
+    public async directTransact(
+        resolved: ResolvedSigningRequest,
+        context: TransactContext,
+        namedParams: any
+    ): Promise<{signatures: any[]}> {
         if (!this.connectedType || this.connectedType === 'remote') {
-            throw new Error('Invalid connection type, expect direct connection');
+            throw new Error('Invalid connection type, expect direct connection')
         }
 
         // FIX: Send the complete serialized transaction as a single action string
         // This preserves the original transaction structure while working with mobile app
-        const completeTransaction = Array.from(resolved.serializedTransaction);
-        const encodeTransactions = btoa(JSON.stringify(completeTransaction));
-        const callbackUrl = btoa(generateReturnUrl() || '');
-        const deviceHash = encodeURIComponent('1234567890');
-        
+        const completeTransaction = Array.from(resolved.serializedTransaction)
+        const encodeTransactions = btoa(JSON.stringify(completeTransaction))
+        const callbackUrl = btoa(generateReturnUrl() || '')
+        const deviceHash = encodeURIComponent('1234567890')
+
         // Generate a unique UUID for this specific transaction to prevent conflicts
-        const transactionUuid = uuidv4();
+        const transactionUuid = uuidv4()
 
         // Build the deep link URL with organized parameters
         const linkParams = new URLSearchParams({
@@ -587,112 +608,118 @@ export class MobileAppConnect {
             redirect: 'true',
             deviceHash: deviceHash,
             uuid: transactionUuid,
-            broadcast: 'false'
-        });
+            broadcast: 'false',
+        })
 
-        const link = `${this.WAX_SCHEME_DEEPLINK}://transact?${linkParams.toString()}`;
-        
+        const link = `${this.WAX_SCHEME_DEEPLINK}://transact?${linkParams.toString()}`
+
         try {
-            await this.openDeepLinkWithFallback(link);
+            await this.openDeepLinkWithFallback(link)
         } catch (error) {
-            console.error('Failed to open deeplink:', error);
-            throw error;
+            console.error('Failed to open deeplink:', error)
+            throw error
         }
 
         return new Promise(async (resolve, reject) => {
             const timeout = setTimeout(() => {
-                cleanup();
-                reject(new Error('Transaction timeout'));
-            }, 180000); // 3 min
+                cleanup()
+                reject(new Error('Transaction timeout'))
+            }, 180000) // 3 min
 
-            let subscription: any;
-            let interval: any;
+            let subscription: any
+            let interval: any
             const cleanup = () => {
-                clearTimeout(timeout);
-                clearInterval(interval);
-                subscription?.unsubscribe?.();
-            };
+                clearTimeout(timeout)
+                clearInterval(interval)
+                subscription?.unsubscribe?.()
+            }
 
             const transact = async () => {
                 try {
-                    const re = await events.connect(`/device-transact/${transactionUuid}`, { authToken: transactionUuid });
+                    const re = await events.connect(`/device-transact/${transactionUuid}`, {
+                        authToken: transactionUuid,
+                    })
                     subscription = re.subscribe({
                         next: (data) => {
-                            if (data?.type === 'data' && data?.event?.signatures) {                                                                
-                                const signatures = decodeSignatureFromWallet(data.event.signatures);
+                            if (data?.type === 'data' && data?.event?.signatures) {
+                                const signatures = decodeSignatureFromWallet(data.event.signatures)
                                 // FIX: Only return signatures for the original transaction
                                 // Do not create a new resolved request if transaction was modified
                                 const result: WalletPluginSignResponse = {
                                     signatures,
                                 }
-                                
+
                                 // If a modified transaction was returned, validate it but don't create new resolved request
                                 if (data.event.serializedTransaction) {
                                     const responseTransaction = Serializer.decode({
                                         data: data.event.serializedTransaction,
                                         type: Transaction,
                                     })
-                                    
+
                                     // Validate modifications but don't create new resolved request
                                     if (!responseTransaction.equals(resolved.transaction)) {
-                                        validateModifications(resolved.transaction, responseTransaction)
+                                        validateModifications(
+                                            resolved.transaction,
+                                            responseTransaction
+                                        )
                                         // FIX: Return signatures for the original transaction, not the modified one
                                         // This ensures cosigner signatures remain valid
                                     }
                                 }
-                                
-                                resolve(result);
-                                re.close();
-                                return;
-                            } else if (data?.event?.error) {
-                                const msg = data.event.error === 'TransactionDeclined'
-                                    ? 'User rejected the transaction'
-                                    : data.event.error;
-                                cleanup();
-                                reject(new Error(msg));
+
+                                resolve(result)
                                 re.close()
-                                return;
+                                return
+                            } else if (data?.event?.error) {
+                                const msg =
+                                    data.event.error === 'TransactionDeclined'
+                                        ? 'User rejected the transaction'
+                                        : data.event.error
+                                cleanup()
+                                reject(new Error(msg))
+                                re.close()
+                                return
                             } else {
-                                cleanup();
-                                reject(new Error('Transaction unknown error'));
-                                re.close();
-                                return;
+                                cleanup()
+                                reject(new Error('Transaction unknown error'))
+                                re.close()
+                                return
                             }
                         },
                         error: (err) => {
-                            alert('subscription error::' + err?.message);
-                            console.error('Subscription error:', err);
-                            cleanup();
-                            reject(err);
-                            re.close();
-                            return;
-                        }
-                    });
+                            alert('subscription error::' + err?.message)
+                            console.error('Subscription error:', err)
+                            cleanup()
+                            reject(err)
+                            re.close()
+                            return
+                        },
+                    })
                 } catch (err) {
-                    cleanup();
-                    reject(err);
-                    return;
+                    cleanup()
+                    reject(err)
+                    return
                 }
-            };
+            }
             interval = setInterval(() => {
                 if (document.hasFocus()) {
-                    transact();
+                    transact()
                 }
-            }, 350);
-            return;
-        });
+            }, 350)
+            return
+        })
     }
 
     public async cleanup(): Promise<void> {
         // Reset connection state
-        this.connectedType = null;
-        this.user = undefined;
-        this.isCanceled = false;
-        
+        this.connectedType = null
+        this.user = undefined
+        this.isCanceled = false
+
         // Clear stored connection type
-        localStorage.removeItem('connectedType');
-        
+        localStorage.removeItem('connectedType')
+
         // Close all event connections
-        await events.closeAll();
+        await events.closeAll()
     }
 }
