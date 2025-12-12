@@ -17,7 +17,12 @@ const banner = `
  */
 `.trim()
 
-const external = Object.keys(pkg.peerDependencies)
+const external = [
+    ...Object.keys(pkg.peerDependencies),
+    ...Object.keys(pkg.dependencies),
+    'aws-amplify/data',
+    'aws-amplify/api',
+]
 
 /** @type {import('rollup').RollupOptions} */
 export default [
