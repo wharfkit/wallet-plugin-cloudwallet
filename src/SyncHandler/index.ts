@@ -1,8 +1,8 @@
-import { Amplify } from 'aws-amplify';
-import { generateClient } from 'aws-amplify/api';
-import { events } from 'aws-amplify/data';
-import { GraphQLResult } from '@aws-amplify/api';
-import { TransactionMessage, TransactionHandler } from './transaction';
+import {Amplify} from 'aws-amplify'
+import {generateClient} from 'aws-amplify/api'
+import {events} from 'aws-amplify/data'
+import {GraphQLResult} from '@aws-amplify/api'
+import {TransactionHandler, TransactionMessage} from './transaction'
 
 const publish2channel = /* GraphQL */ `
     mutation Publish2channel($data: AWSJSON!, $name: String!) {
@@ -12,15 +12,7 @@ const publish2channel = /* GraphQL */ `
             __typename
         }
     }
-`;
-
-type Subscribe2channelSubscription = {
-    subscribe2channel?: {
-        __typename: 'Channel'
-        data: string
-        name: string
-    } | null
-};
+`
 
 export interface SyncHandlerConfig {
     graphQLRelayEndpoint: string
@@ -44,26 +36,29 @@ export class SyncHandlerConfig {
                 Events: {
                     endpoint: config.eventRelayEndpoint,
                     region: config.eventRelayRegion,
-                    defaultAuthMode: 'lambda'
-                }
+                    defaultAuthMode: 'lambda',
+                },
             },
-        });
-        
+        })
     }
 }
 
 export abstract class GraphQLSyncHandler {
-    private client = generateClient();
+    private client = generateClient()
 
-    public async publishToChannel(channelName: string, data: any, authHeaders: string): Promise<void> {
+    public async publishToChannel(
+        channelName: string,
+        data: any,
+        authHeaders: string
+    ): Promise<void> {
         await this.client.graphql<GraphQLResult<any>>({
             query: publish2channel,
             variables: {
                 name: channelName,
                 data: JSON.stringify(data),
             },
-            authToken: authHeaders
-        });
+            authToken: authHeaders,
+        })
     }
 
     public async subscribeToChannel<T>(
@@ -71,38 +66,40 @@ export abstract class GraphQLSyncHandler {
         messageHandler: (message: T) => void,
         errorHandler: (error: any) => void,
         authHeaders: string,
-        timeoutMs: number = 180000, // 3 minutes default timeout
-    ): Promise<{ unsubscribe: () => void }> {
+        timeoutMs = 180000 // 3 minutes default timeout
+    ): Promise<{unsubscribe: () => void}> {
         // Use the Event API for subscriptions if you want real-time pub/sub
         // Otherwise, use GraphQL subscriptions as before (if your backend supports it)
         try {
-            const channel = await events.connect(channelName);
+            const channel = await events.connect(channelName)
             const subscription = channel.subscribe({
                 next: (data: any) => {
-                    this.handleMessage(data, messageHandler, errorHandler);
+                    this.handleMessage(data, messageHandler, errorHandler)
                 },
                 error: (error: any) => {
-                    errorHandler(error);
-                }
-            });
+                    errorHandler(error)
+                },
+            })
 
             // Set up timeout
             const timeoutId = setTimeout(() => {
-                subscription.unsubscribe();
-                errorHandler(new Error('Subscription timeout after ' + timeoutMs + 'ms'));
-            }, timeoutMs);
+                subscription.unsubscribe()
+                errorHandler(new Error('Subscription timeout after ' + timeoutMs + 'ms'))
+            }, timeoutMs)
 
             return {
                 unsubscribe: () => {
-                    clearTimeout(timeoutId);
-                    subscription.unsubscribe();
+                    clearTimeout(timeoutId)
+                    subscription.unsubscribe()
                 },
-            };
+            }
         } catch (error) {
-            errorHandler(error);
+            errorHandler(error)
             return {
-                unsubscribe: () => {}
-            };
+                unsubscribe: () => {
+                    // Empty cleanup function for error case
+                },
+            }
         }
     }
 
@@ -110,21 +107,20 @@ export abstract class GraphQLSyncHandler {
         rawMessage: any,
         messageHandler: (message: T) => void,
         errorHandler: (error: any) => void
-    ): void;
+    ): void
 }
 
 export class TransactionSyncHandler extends GraphQLSyncHandler {
-
     static parseAuthHeaders(account: string, token: string, svc: string): string {
         // Ensure token is properly parsed if it's a string
         if (typeof token === 'string') {
             try {
                 // If token is a JSON string, parse it
                 if (token.startsWith('{')) {
-                    token = JSON.parse(token);
+                    token = JSON.parse(token)
                 }
             } catch (e) {
-                console.warn('Failed to parse token:', e);
+                console.warn('Failed to parse token:', e)
             }
         }
 
@@ -132,8 +128,8 @@ export class TransactionSyncHandler extends GraphQLSyncHandler {
             account,
             token,
             svc,
-            mode: 'dapp'
-        });
+            mode: 'dapp',
+        })
     }
 
     protected handleMessage<T>(
@@ -142,14 +138,14 @@ export class TransactionSyncHandler extends GraphQLSyncHandler {
         errorHandler: (error: any) => void
     ): void {
         if (TransactionHandler.isValidTransactionMessage(rawMessage)) {
-            messageHandler(rawMessage as T);
-            return;
+            messageHandler(rawMessage as T)
+            return
         }
-        errorHandler(new Error('Invalid transaction message received'));
+        errorHandler(new Error('Invalid transaction message received'))
     }
 
     public generateChannelName(origin: string, account?: string): string {
-        return `transact:${origin}:${account || ''}`;
+        return `transact:${origin}:${account || ''}`
     }
 
     public generateTransactionMessage(
@@ -157,15 +153,15 @@ export class TransactionSyncHandler extends GraphQLSyncHandler {
         namedParams: any,
         origin: string
     ): TransactionMessage {
-        return TransactionHandler.generateTransactionMessage(actions, namedParams, origin);
+        return TransactionHandler.generateTransactionMessage(actions, namedParams, origin)
     }
 
-    public processTransactionResult(message: TransactionMessage): { signatures: string[] } {
+    public processTransactionResult(message: TransactionMessage): {signatures: string[]} {
         if (message.type !== 'approved') {
-            throw new Error('Transaction not approved');
+            throw new Error('Transaction not approved')
         }
         return {
-            signatures: TransactionHandler.processTransactionResult(message.result)
-        };
+            signatures: TransactionHandler.processTransactionResult(message.result),
+        }
     }
 }

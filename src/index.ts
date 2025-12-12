@@ -1,15 +1,19 @@
 import {
     AbstractWalletPlugin,
-    cancelable,
     Cancelable,
+    cancelable,
     ChainId,
     IdentityProof,
     LoginContext,
+    Name,
     PermissionLevel,
+    PromptElement,
     PromptResponse,
     ResolvedSigningRequest,
     Serializer,
+    Signature,
     SigningRequest,
+    TimePointSec,
     TransactContext,
     Transaction,
     UserInterfaceTranslateOptions,
@@ -18,11 +22,6 @@ import {
     WalletPluginLoginResponse,
     WalletPluginMetadata,
     WalletPluginSignResponse,
-    Name,
-    TimePointSec,
-    Signature,
-    PromptElement,
-    LogoutContext,
 } from '@wharfkit/session'
 
 import {autoLogin, popupLogin} from './login'
@@ -341,20 +340,21 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
         if (!(this.mobileAppConnect instanceof MobileAppConnect)) {
             throw new Error('MobileAppConnect is not initialized')
         }
-        let mobileSignCancelResolve: any
         let mobileSignCancelReject: any
         const mobileSignCancelPromise = new Promise((resolve, reject) => {
-            mobileSignCancelResolve = resolve
             mobileSignCancelReject = reject
         })
-        const t = context.ui.getTranslate(this.id)
 
         const expiration = resolved.transaction.expiration.toDate()
         const now = new Date()
         const timeout = Math.floor(expiration.getTime() - now.getTime())
         console.log('timeout', timeout)
 
-        let promptPromise: Cancelable<PromptResponse> = cancelable(new Promise(() => {}))
+        let promptPromise: Cancelable<PromptResponse> = cancelable(
+            new Promise(() => {
+                // Empty promise that never resolves
+            })
+        )
         if (!allowAutosign(resolved, this.data)) {
             // Tell Wharf we need to prompt the user with a countdown
             promptPromise = context.ui.prompt({
@@ -408,7 +408,11 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
         // Perform WAX Cloud Wallet signing
         const callbackPromise = this.getWalletResponse(resolved, context, t, timeout)
 
-        let promptPromise: Cancelable<PromptResponse> = cancelable(new Promise(() => {}))
+        let promptPromise: Cancelable<PromptResponse> = cancelable(
+            new Promise(() => {
+                // Empty promise that never resolves
+            })
+        )
         if (!allowAutosign(resolved, this.data)) {
             // Tell Wharf we need to prompt the user with a countdown
             promptPromise = context.ui.prompt({
@@ -542,7 +546,7 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
         return response
     }
 
-    async logout(context: LogoutContext): Promise<void> {
+    async logout(): Promise<void> {
         if (this.mobileAppConnect) {
             await this.mobileAppConnect.cleanup()
         }

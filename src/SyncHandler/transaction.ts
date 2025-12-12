@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+import {v4 as uuidv4} from 'uuid'
 
 export interface TransactionMessage {
     id: string
@@ -28,7 +28,7 @@ export class TransactionHandler {
             actions,
             namedParams,
             dapp: origin,
-        };
+        }
     }
 
     /**
@@ -42,8 +42,10 @@ export class TransactionHandler {
             typeof message === 'object' &&
             typeof message.id === 'string' &&
             typeof message.type === 'string' &&
-            ['requesting', 'approved', 'rejected', 'error', 'ready', 'not-ready'].includes(message.type)
-        );
+            ['requesting', 'approved', 'rejected', 'error', 'ready', 'not-ready'].includes(
+                message.type
+            )
+        )
     }
 
     /**
@@ -52,8 +54,11 @@ export class TransactionHandler {
      * @param transactionId Transaction ID to match against
      * @returns boolean indicating if the message matches the transaction ID
      */
-    public static isMatchingTransaction(message: TransactionMessage, transactionId: string): boolean {
-        return message.id === transactionId;
+    public static isMatchingTransaction(
+        message: TransactionMessage,
+        transactionId: string
+    ): boolean {
+        return message.id === transactionId
     }
 
     /**
@@ -63,20 +68,20 @@ export class TransactionHandler {
      */
     public static processTransactionResult(result: any): string[] {
         if (!result?.signatures) {
-            return [];
+            return []
         }
 
         return result.signatures.map((sig: string) => {
             try {
                 // Check if the signature is base64 encoded
                 if (/^[A-Za-z0-9+/=]+$/.test(sig)) {
-                    return atob(sig);
+                    return atob(sig)
                 }
-                return sig;
+                return sig
             } catch (e) {
-                console.warn('Failed to decode signature:', e);
-                return sig;
+                console.warn('Failed to decode signature:', e)
+                return sig
             }
-        });
+        })
     }
-} 
+}

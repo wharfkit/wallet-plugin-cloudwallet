@@ -5,46 +5,23 @@ import {v4 as uuidv4} from 'uuid'
 import {
     LoginContext,
     PromptElement,
-    Serializer,
-    Transaction,
     ResolvedSigningRequest,
-    SigningRequest,
+    Serializer,
     TransactContext,
-    ChainId,
+    Transaction,
     WalletPluginSignResponse,
 } from '@wharfkit/session'
 import {MobileAppConnectConfig} from '../interfaces'
 import {decodeSignatureFromWallet, generateReturnUrl} from '../helpers'
-import {TransactionSyncHandler, SyncHandlerConfig} from '../SyncHandler'
+import {SyncHandlerConfig, TransactionSyncHandler} from '../SyncHandler'
 import {TransactionMessage} from '../SyncHandler/transaction'
 import {events} from 'aws-amplify/data'
 import {validateModifications} from '../utils'
-
-const MCW_CONNECT_UNIVERSAL_LINK = 'https://mycloudwallet.com/connect'
-const MCW_TRANSACT_UNIVERSAL_LINK = 'https://mycloudwallet.com/transact'
 
 declare global {
     interface Window {
         closeCustomPopup?: () => void
     }
-}
-
-const publish2channel = /* GraphQL */ `
-    mutation Publish2channel($data: AWSJSON!, $name: String!) {
-        publish2channel(data: $data, name: $name) {
-            data
-            name
-            __typename
-        }
-    }
-`
-
-type Subscribe2channelSubscription = {
-    subscribe2channel?: {
-        __typename: 'Channel'
-        data: string
-        name: string
-    } | null
 }
 
 export interface RequisitionInfo {
@@ -103,7 +80,7 @@ class InvalidCodeError extends Error {
 
 export class MobileAppConnect {
     private user?: ILoginResponse
-    private isCanceled: boolean = false
+    private isCanceled = false
     private connectedType: 'direct' | 'remote' | 'web' | null = null
     private WAX_SCHEME_DEEPLINK = 'mycloudwallet'
     private activationEndpoint = 'https://login-api.mycloudwallet.com'
@@ -232,7 +209,6 @@ export class MobileAppConnect {
         )
 
         return new Promise((resolve, reject) => {
-            let subscription
             const currentTxInfo = txInfo
             console.log(
                 `start listening on ${channelName} with transaction ID = ${currentTxInfo.id}...`
@@ -247,7 +223,7 @@ export class MobileAppConnect {
                 })
 
             // Subscribe to channel for response
-            subscription = this.transactionSyncHandler.subscribeToChannel<TransactionMessage>(
+            this.transactionSyncHandler.subscribeToChannel<TransactionMessage>(
                 channelName,
                 (message) => {
                     if (message.id !== currentTxInfo.id) {
@@ -285,13 +261,6 @@ export class MobileAppConnect {
                 },
                 authHeaders
             )
-
-            // Cleanup subscription on completion
-            return {
-                unsubscribe: () => {
-                    subscription?.unsubscribe()
-                },
-            }
         })
     }
 
@@ -311,16 +280,12 @@ export class MobileAppConnect {
     }
 
     private async checkActivation(context: LoginContext, requisitionInfo: RequisitionInfo) {
-        try {
-            const activatedData = await this.checkIfActivated(requisitionInfo, this.origin)
-            if (!!activatedData) {
-                this.user = activatedData
-                this.connectedType = 'remote'
-                context.ui.onLoginComplete()
-                return this.user
-            }
-        } catch (error) {
-            throw error
+        const activatedData = await this.checkIfActivated(requisitionInfo, this.origin)
+        if (activatedData) {
+            this.user = activatedData
+            this.connectedType = 'remote'
+            context.ui.onLoginComplete()
+            return this.user
         }
     }
 
@@ -506,7 +471,7 @@ export class MobileAppConnect {
             throw error
         }
 
-        return new Promise(async (resolve, reject) => {
+        return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
                 this.isCanceled = true
                 cleanup()
@@ -514,7 +479,6 @@ export class MobileAppConnect {
             }, 180000) // 3 min
 
             let subscription: any
-            let interval: any
             const cleanup = () => {
                 clearTimeout(timeout)
                 clearInterval(interval)
@@ -573,7 +537,7 @@ export class MobileAppConnect {
                     reject(err)
                 }
             }
-            interval = setInterval(() => {
+            const interval = setInterval(() => {
                 if (document.hasFocus()) {
                     connectToDevice()
                 }
@@ -583,8 +547,8 @@ export class MobileAppConnect {
 
     public async directTransact(
         resolved: ResolvedSigningRequest,
-        context: TransactContext,
-        namedParams: any
+        _context: TransactContext,
+        _namedParams: any
     ): Promise<{signatures: any[]}> {
         if (!this.connectedType || this.connectedType === 'remote') {
             throw new Error('Invalid connection type, expect direct connection')
@@ -620,14 +584,13 @@ export class MobileAppConnect {
             throw error
         }
 
-        return new Promise(async (resolve, reject) => {
+        return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
                 cleanup()
                 reject(new Error('Transaction timeout'))
             }, 180000) // 3 min
 
             let subscription: any
-            let interval: any
             const cleanup = () => {
                 clearTimeout(timeout)
                 clearInterval(interval)
@@ -701,12 +664,11 @@ export class MobileAppConnect {
                     return
                 }
             }
-            interval = setInterval(() => {
+            const interval = setInterval(() => {
                 if (document.hasFocus()) {
                     transact()
                 }
             }, 350)
-            return
         })
     }
 

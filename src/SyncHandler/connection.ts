@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+import {v4 as uuidv4} from 'uuid'
 
 export interface ConnectionMessage {
     id: string
@@ -16,16 +16,16 @@ export interface ConnectionMessage {
 }
 
 export interface ConnectionResult {
-    success: boolean;
-    account: string;
-    keys?: string[];
-    isTemp?: boolean;
-    createData?: any;
-    token?: string;
-    avatarUrl?: string;
-    trustScore?: number;
-    isProofVerified?: any;
-    error?: string;
+    success: boolean
+    account: string
+    keys?: string[]
+    isTemp?: boolean
+    createData?: any
+    token?: string
+    avatarUrl?: string
+    trustScore?: number
+    isProofVerified?: any
+    error?: string
 }
 
 export class ConnectionHandler {
@@ -39,7 +39,7 @@ export class ConnectionHandler {
             id: uuidv4(),
             type: 'requesting',
             dapp,
-        };
+        }
     }
 
     /**
@@ -54,7 +54,7 @@ export class ConnectionHandler {
             typeof message.id === 'string' &&
             typeof message.type === 'string' &&
             ['requesting', 'approved', 'rejected', 'error', 'connected'].includes(message.type)
-        );
+        )
     }
 
     /**
@@ -64,7 +64,7 @@ export class ConnectionHandler {
      * @returns boolean indicating if the message matches the request ID
      */
     public static isMatchingConnection(message: ConnectionMessage, requestId: string): boolean {
-        return message.id === requestId;
+        return message.id === requestId
     }
 
     /**
@@ -77,8 +77,8 @@ export class ConnectionHandler {
             return {
                 success: false,
                 account: '',
-                error: 'Connection not successful'
-            };
+                error: 'Connection not successful',
+            }
         }
 
         return {
@@ -90,7 +90,7 @@ export class ConnectionHandler {
             createData: message.createData,
             avatarUrl: message.avatarUrl,
             trustScore: message.trustScore,
-            isProofVerified: message.isProofVerified
-        };
+            isProofVerified: message.isProofVerified,
+        }
     }
-} 
+}
