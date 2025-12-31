@@ -32,6 +32,7 @@ import defaultTranslations from './translations'
 import {MobileAppConnect} from './MobileAppConnect'
 import {WalletPluginCloudWalletOptions} from './interfaces'
 import {isAndroid, isIos} from './helpers'
+import {version} from './version'
 
 export class WalletPluginCloudWallet extends AbstractWalletPlugin implements WalletPlugin {
     /**
@@ -208,6 +209,7 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
 
         // Create common search parameters
         const searchParams = new URLSearchParams()
+        searchParams.set('v', version)
         const nonce = context.arbitrary['nonce']
         if (nonce) {
             const base64Nonce = btoa(nonce)
@@ -298,7 +300,6 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
         const expiration = resolved.transaction.expiration.toDate()
         const now = new Date()
         const timeout = Math.floor(expiration.getTime() - now.getTime())
-        console.log('timeout', timeout)
 
         let promptPromise: Cancelable<PromptResponse> = cancelable(
             new Promise(() => {

@@ -2,6 +2,7 @@ import {ResolvedSigningRequest, UserInterfaceTranslateOptions} from '@wharfkit/s
 
 import {WAXCloudWalletSigningResponse} from './types'
 import {getCurrentTime, isValidEvent, registerCloseListener} from './utils'
+import {version} from './version'
 
 export async function popupTransact(
     t: (key: string, options?: UserInterfaceTranslateOptions) => string,
@@ -34,6 +35,7 @@ export async function popupTransact(
                     startTime: getCurrentTime(),
                     transaction: request.serializedTransaction,
                     type: 'TRANSACTION',
+                    version,
                 },
                 String(urlString)
             )
