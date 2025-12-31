@@ -167,7 +167,6 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
                                 })
                             this.data.identityProof = identityProof
                             this.data.proof = user?.proof
-                            this.data.whitelist = (user as any)?.whitelistedContracts
                             directConnectPromiseResolve({
                                 chain: context.chain.id,
                                 permissionLevel: PermissionLevel.from({
@@ -248,8 +247,6 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
             )
         }
 
-        // Save our whitelisted contracts
-        this.data.whitelist = response.whitelistedContracts
         this.data.proof = (response as any)?.proof
 
         console.log('waxLogin::response proof', (response as any)?.proof)
@@ -496,9 +493,6 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
                 })
             )
         }
-
-        // Save our whitelisted contracts
-        this.data.whitelist = response.whitelistedContracts
 
         // Return the response from the API
         return response
