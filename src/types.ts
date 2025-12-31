@@ -22,7 +22,6 @@ interface WAXCloudWalletResponse {
 }
 
 export interface WAXCloudWalletLoginResponse extends WAXCloudWalletResponse {
-    autoLogin: boolean
     isTemp?: boolean
     pubKeys: PublicKeyType[]
     userAccount: NameType

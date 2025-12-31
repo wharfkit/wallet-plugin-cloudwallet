@@ -24,8 +24,8 @@ import {
     WalletPluginSignResponse,
 } from '@wharfkit/session'
 
-import {autoLogin, popupLogin} from './login'
-import {allowAutosign, autoSign, popupTransact} from './sign'
+import {popupLogin} from './login'
+import {popupTransact} from './sign'
 import {WAXCloudWalletLoginResponse, WAXCloudWalletSigningResponse} from './types'
 import {validateModifications} from './utils'
 import defaultTranslations from './translations'
@@ -74,7 +74,6 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
      * WAX Cloud Wallet Configuration
      */
     public url = 'https://www.mycloudwallet.com'
-    public autoUrl = 'https://idm-api.mycloudwallet.com/v1/accounts/auto-accept'
     public loginTimeout = 300000 // 5 minutes
     public allowTemp = false
     private mobileAppConnect: MobileAppConnect | null = null
@@ -91,9 +90,6 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
         }
         if (options?.url) {
             this.url = options.url
-        }
-        if (options?.autoUrl) {
-            this.autoUrl = options.autoUrl
         }
         if (options?.loginTimeout) {
             this.loginTimeout = options.loginTimeout
@@ -239,19 +235,11 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
         }
         searchParams.set('returnTemp', this.allowTemp.toString())
 
-        try {
-            // Attempt automatic login
-            const autoLoginUrl = new URL('/login', this.autoUrl)
-            autoLoginUrl.search = searchParams.toString()
+        // Fallback to popup login
+        const popupLoginUrl = new URL('/cloud-wallet/login', this.url)
+        popupLoginUrl.search = searchParams.toString()
 
-            response = await autoLogin(t, autoLoginUrl.toString())
-        } catch (e) {
-            // Fallback to popup login
-            const popupLoginUrl = new URL('/cloud-wallet/login', this.url)
-            popupLoginUrl.search = searchParams.toString()
-
-            response = await popupLogin(t, popupLoginUrl.toString())
-        }
+        response = await popupLogin(t, popupLoginUrl.toString())
 
         // If failed due to no response or no verified response, throw error
         if (!response) {
@@ -355,26 +343,26 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
                 // Empty promise that never resolves
             })
         )
-        if (!allowAutosign(resolved, this.data)) {
-            // Tell Wharf we need to prompt the user with a countdown
-            promptPromise = context.ui.prompt({
-                title: 'Sign',
-                body: `Please complete the transaction using the Cloud Wallet app.`,
-                optional: true,
-                elements: [
-                    {
-                        type: 'countdown',
-                        data: expiration.toISOString(),
-                    },
-                ],
-            })
 
-            // Clear the timeout if the UI throws (which generally means it closed)
-            promptPromise.catch((error) => {
-                clearTimeout(timer)
-                mobileSignCancelReject(error)
-            })
-        }
+        // Tell Wharf we need to prompt the user with a countdown
+        promptPromise = context.ui.prompt({
+            title: 'Sign',
+            body: `Please complete the transaction using the Cloud Wallet app.`,
+            optional: true,
+            elements: [
+                {
+                    type: 'countdown',
+                    data: expiration.toISOString(),
+                },
+            ],
+        })
+
+        // Clear the timeout if the UI throws (which generally means it closed)
+        promptPromise.catch((error) => {
+            clearTimeout(timer)
+            mobileSignCancelReject(error)
+        })
+
         const timer = setTimeout(() => {
             if (!context.ui) {
                 throw new Error('No UI defined')
@@ -413,23 +401,22 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
                 // Empty promise that never resolves
             })
         )
-        if (!allowAutosign(resolved, this.data)) {
-            // Tell Wharf we need to prompt the user with a countdown
-            promptPromise = context.ui.prompt({
-                title: 'Sign',
-                body: `Please complete the transaction using the Cloud Wallet popup window.`,
-                optional: true,
-                elements: [
-                    {
-                        type: 'countdown',
-                        data: expiration.toISOString(),
-                    },
-                ],
-            })
 
-            // Clear the timeout if the UI throws (which generally means it closed)
-            promptPromise.catch(() => clearTimeout(timer))
-        }
+        // Tell Wharf we need to prompt the user with a countdown
+        promptPromise = context.ui.prompt({
+            title: 'Sign',
+            body: `Please complete the transaction using the Cloud Wallet popup window.`,
+            optional: true,
+            elements: [
+                {
+                    type: 'countdown',
+                    data: expiration.toISOString(),
+                },
+            ],
+        })
+
+        // Clear the timeout if the UI throws (which generally means it closed)
+        promptPromise.catch(() => clearTimeout(timer))
 
         // Create a timer to test the external cancelation of the prompt, if defined
         const timer = setTimeout(() => {
@@ -501,29 +488,7 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
             throw new Error('The Cloud Wallet requires a UI to sign transactions.')
         }
 
-        // Check if automatic signing is allowed
-        if (allowAutosign(resolved, this.data)) {
-            try {
-                // Try automatic signing
-                response = await autoSign(t, `${this.autoUrl}/signing`, resolved)
-            } catch (e) {
-                // Fallback to poup signing
-                response = await popupTransact(
-                    t,
-                    `${this.url}/cloud-wallet/signing/`,
-                    resolved,
-                    timeout
-                )
-            }
-        } else {
-            // If automatic is not allowed use the popup
-            response = await popupTransact(
-                t,
-                `${this.url}/cloud-wallet/signing/`,
-                resolved,
-                timeout
-            )
-        }
+        response = await popupTransact(t, `${this.url}/cloud-wallet/signing/`, resolved, timeout)
 
         // Catch unknown errors where no response is returned
         if (!response) {

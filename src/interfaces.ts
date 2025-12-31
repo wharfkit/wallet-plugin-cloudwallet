@@ -44,7 +44,6 @@ export interface MobileAppConnectConfig {
 export interface WalletPluginCloudWalletOptions {
     supportedChains?: string[]
     url?: string
-    autoUrl?: string
     loginTimeout?: number
     allowTemp?: boolean
     mobileAppConnectConfig?: MobileAppConnectConfig
