@@ -149,24 +149,10 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
                                 throw new Error('A chain must be selected to login with.')
                             }
                             const user = await this.mobileAppConnect.directConnect(context)
-                            // handle proof
-                            const signature = (user as any)?.proof?.data?.signature
-                            const identityProof =
-                                signature &&
-                                IdentityProof.from({
-                                    chainId: ChainId.from(context?.chain?.id),
-                                    scope: Name.from(context.appName || ''),
-                                    expiration: TimePointSec.from(
-                                        new Date().getTime() / 1000 + 60 * 60
-                                    ),
-                                    signer: PermissionLevel.from({
-                                        actor: `${user?.account}`,
-                                        permission: user?.permission || 'active',
-                                    }),
-                                    signature: Signature.from(signature),
-                                })
-                            this.data.identityProof = identityProof
-                            this.data.proof = user?.proof
+                            let identityProof: IdentityProof | undefined = undefined
+                            if ((user as any)?.proof?.data?.signature) {
+                                identityProof = IdentityProof.from((user as any)?.proof.data as any)
+                            }
                             directConnectPromiseResolve({
                                 chain: context.chain.id,
                                 permissionLevel: PermissionLevel.from({
@@ -247,23 +233,10 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
             )
         }
 
-        this.data.proof = (response as any)?.proof
-
-        console.log('waxLogin::response proof', (response as any)?.proof)
-        const signature = (response as any)?.proof?.data?.signature
-        const identityProof =
-            signature &&
-            IdentityProof.from({
-                chainId: ChainId.from(context?.chain?.id),
-                scope: Name.from(context.appName || ''),
-                expiration: TimePointSec.from(new Date().getTime() / 1000 + 60 * 60),
-                signer: PermissionLevel.from({
-                    actor: response.userAccount,
-                    permission: response.permission || 'active',
-                }),
-                signature: Signature.from((response as any)?.proof?.data?.signature),
-            })
-        this.data.identityProof = identityProof
+        let identityProof: IdentityProof | undefined = undefined
+        if ((response as any)?.proof?.data?.signature) {
+            identityProof = IdentityProof.from((response as any)?.proof.data as any)
+        }
         return new Promise((resolve) => {
             if (!context.chain) {
                 throw new Error('A chain must be selected to login with.')
@@ -280,6 +253,7 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
             })
         })
     }
+
     /**
      * Performs the wallet logic required to sign a transaction and return the signature.
      *
@@ -297,10 +271,8 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
             this.mobileAppConnect instanceof MobileAppConnect &&
             (connectedType === 'direct' || connectedType === 'remote')
         ) {
-            console.log('mobileSign')
             promise = this.mobileSign(resolved, context)
         } else {
-            console.log('waxSign')
             promise = this.waxSign(resolved, context)
         }
         return cancelable(promise, (canceled) => {
