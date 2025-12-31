@@ -21,7 +21,7 @@ export async function popupLogin(
     // Return a promise that either times out or resolves when the popup resolves
     return new Promise<WAXCloudWalletLoginResponse>((resolve, reject) => {
         const closeListener = registerCloseListener(t, popup, reject)
-        // Event handler awaiting response from WCW
+        // Event handler awaiting response from the Cloud Wallet
         const handleEvent = (event: MessageEvent) => {
             if (!isValidEvent(event, url, popup)) {
                 return
@@ -50,7 +50,7 @@ export async function popupLogin(
                 )
             )
         }, timeout)
-        // Add event listener awaiting WCW Response
+        // Add event listener awaiting Cloud Wallet Response
         window.addEventListener('message', handleEvent)
     })
 }

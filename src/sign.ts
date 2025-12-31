@@ -68,7 +68,7 @@ export async function popupTransact(
                 )
             )
         }, timeout)
-        // Add event listener awaiting WCW Response
+        // Add event listener awaiting Cloud Wallet Response
         window.addEventListener('message', handleEvent)
     })
 }

@@ -9,7 +9,6 @@ export interface ILoginResponse {
     keys: string[]
     createData?: any
     avatarUrl?: string
-    trustScore?: number
     isProofVerified?: any
     token?: string
     proof?: any

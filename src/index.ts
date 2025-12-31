@@ -71,7 +71,7 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
     })
 
     /**
-     * WAX Cloud Wallet Configuration
+     * Cloud Wallet Configuration
      */
     public url = 'https://www.mycloudwallet.com'
     public loginTimeout = 300000 // 5 minutes
@@ -383,7 +383,7 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
         const now = new Date()
         const timeout = Math.floor(expiration.getTime() - now.getTime())
 
-        // Perform WAX Cloud Wallet signing
+        // Perform Cloud Wallet signing
         const callbackPromise = this.getWalletResponse(resolved, context, t, timeout)
 
         let promptPromise: Cancelable<PromptResponse> = cancelable(
@@ -431,9 +431,9 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
                 signatures: callbackResponse.signatures,
             }
 
-            // If a transaction was returned by the WCW
+            // If a transaction was returned by the Cloud Wallet
             if (callbackResponse.serializedTransaction) {
-                // Convert the serialized transaction from the WCW to a Transaction object
+                // Convert the serialized transaction from the Cloud Wallet to a Transaction object
                 const responseTransaction = Serializer.decode({
                     data: callbackResponse.serializedTransaction,
                     type: Transaction,

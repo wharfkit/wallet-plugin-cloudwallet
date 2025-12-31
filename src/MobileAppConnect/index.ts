@@ -35,7 +35,6 @@ interface ActivatedData {
     keys: string[]
     createData?: any
     avatarUrl?: string
-    trustScore?: number
     isProofVerified?: any
     token: string
     userAccount?: string

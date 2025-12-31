@@ -10,7 +10,6 @@ export interface ConnectionMessage {
     keys?: string[]
     createData?: any
     avatarUrl?: string
-    trustScore?: number
     isProofVerified?: any
 }
 
@@ -21,7 +20,6 @@ export interface ConnectionResult {
     createData?: any
     token?: string
     avatarUrl?: string
-    trustScore?: number
     isProofVerified?: any
     error?: string
 }
@@ -86,7 +84,6 @@ export class ConnectionHandler {
             keys: message.keys,
             createData: message.createData,
             avatarUrl: message.avatarUrl,
-            trustScore: message.trustScore,
             isProofVerified: message.isProofVerified,
         }
     }
