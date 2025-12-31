@@ -8,7 +8,6 @@ export interface ConnectionMessage {
     error?: string
     token?: string
     keys?: string[]
-    isTemp?: boolean
     createData?: any
     avatarUrl?: string
     trustScore?: number
@@ -19,7 +18,6 @@ export interface ConnectionResult {
     success: boolean
     account: string
     keys?: string[]
-    isTemp?: boolean
     createData?: any
     token?: string
     avatarUrl?: string
@@ -86,7 +84,6 @@ export class ConnectionHandler {
             account: message.account,
             token: message.token,
             keys: message.keys,
-            isTemp: message.isTemp,
             createData: message.createData,
             avatarUrl: message.avatarUrl,
             trustScore: message.trustScore,

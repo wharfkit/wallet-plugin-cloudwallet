@@ -55,7 +55,7 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
         // The blockchains this WalletPlugin supports
         supportedChains: [
             '1064487b3cd1a897ce03ae5b6a865651747e2e152090f99c1d19d44e01aea5a4', // WAX (Mainnet)
-            // 'f16b1833c747c43682f4386fca9cbb327929334a762755ebec17f6f23c9b8a12', // NYI - WAX (Testnet)
+            'f16b1833c747c43682f4386fca9cbb327929334a762755ebec17f6f23c9b8a12', // WAX (Testnet) - new wallet
         ],
     }
 
@@ -75,7 +75,6 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
      */
     public url = 'https://www.mycloudwallet.com'
     public loginTimeout = 300000 // 5 minutes
-    public allowTemp = false
     private mobileAppConnect: MobileAppConnect | null = null
     private options?: WalletPluginCloudWalletOptions
 
@@ -93,9 +92,6 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
         }
         if (options?.loginTimeout) {
             this.loginTimeout = options.loginTimeout
-        }
-        if (options?.allowTemp) {
-            this.allowTemp = options.allowTemp
         }
         if (options?.mobileAppConnectConfig) {
             this.mobileAppConnect = new MobileAppConnect(options.mobileAppConnectConfig)
@@ -171,7 +167,6 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
                                 })
                             this.data.identityProof = identityProof
                             this.data.proof = user?.proof
-                            this.data.isTempAccount = (user as any)?.isTemp
                             this.data.whitelist = (user as any)?.whitelistedContracts
                             directConnectPromiseResolve({
                                 chain: context.chain.id,
@@ -233,7 +228,6 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
             const base64Nonce = btoa(nonce)
             searchParams.set('n', base64Nonce)
         }
-        searchParams.set('returnTemp', this.allowTemp.toString())
 
         // Fallback to popup login
         const popupLoginUrl = new URL('/cloud-wallet/login', this.url)
@@ -256,7 +250,6 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
 
         // Save our whitelisted contracts
         this.data.whitelist = response.whitelistedContracts
-        this.data.isTempAccount = response.isTemp
         this.data.proof = (response as any)?.proof
 
         console.log('waxLogin::response proof', (response as any)?.proof)

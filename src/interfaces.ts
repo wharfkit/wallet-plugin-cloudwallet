@@ -13,7 +13,6 @@ export interface ILoginResponse {
     account: string
     permission?: string
     keys: string[]
-    isTemp?: boolean
     createData?: any
     avatarUrl?: string
     trustScore?: number
@@ -45,6 +44,5 @@ export interface WalletPluginCloudWalletOptions {
     supportedChains?: string[]
     url?: string
     loginTimeout?: number
-    allowTemp?: boolean
     mobileAppConnectConfig?: MobileAppConnectConfig
 }
