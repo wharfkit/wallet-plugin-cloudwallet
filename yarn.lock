@@ -2538,10 +2538,10 @@
   dependencies:
     tslib "^2.1.0"
 
-"@wharfkit/session@^1.2.8":
-  version "1.6.0"
-  resolved "https://registry.yarnpkg.com/@wharfkit/session/-/session-1.6.0.tgz#8863feb83fc71f55e49a0729aceabf1c688e216a"
-  integrity sha512-yrCDcW42Dqd387usVHa3qjnttc65OzHK3REKovzo6wLpQsPn709xzx4J6B9e9Xjb0WC/GQLghtr9EX+T+rRH6w==
+"@wharfkit/session@^1.6.1":
+  version "1.6.1"
+  resolved "https://registry.yarnpkg.com/@wharfkit/session/-/session-1.6.1.tgz#087856dc547fea7b5aff547ca9c984a772da9239"
+  integrity sha512-k6ntDGOe8bvD/Ps0erTPTFMdYVFrw5cRvPcEwxytlmRRcNV/M8xWcpCYWdmGDxa8QYqynf/hAkbVh1PSwRGl5A==
   dependencies:
     "@wharfkit/abicache" "^1.2.1"
     "@wharfkit/antelope" "^1.0.11"
