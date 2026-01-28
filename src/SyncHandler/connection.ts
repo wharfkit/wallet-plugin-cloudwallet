@@ -8,8 +8,10 @@ export interface ConnectionMessage {
     error?: string
     token?: string
     keys?: string[]
+    isTemp?: boolean
     createData?: any
     avatarUrl?: string
+    trustScore?: number
     isProofVerified?: any
 }
 
@@ -17,9 +19,11 @@ export interface ConnectionResult {
     success: boolean
     account: string
     keys?: string[]
+    isTemp?: boolean
     createData?: any
     token?: string
     avatarUrl?: string
+    trustScore?: number
     isProofVerified?: any
     error?: string
 }
@@ -82,8 +86,10 @@ export class ConnectionHandler {
             account: message.account,
             token: message.token,
             keys: message.keys,
+            isTemp: message.isTemp,
             createData: message.createData,
             avatarUrl: message.avatarUrl,
+            trustScore: message.trustScore,
             isProofVerified: message.isProofVerified,
         }
     }

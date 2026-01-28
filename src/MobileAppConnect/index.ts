@@ -33,8 +33,10 @@ export interface RequisitionInfo {
 interface ActivatedData {
     account: string
     keys: string[]
+    isTemp?: boolean
     createData?: any
     avatarUrl?: string
+    trustScore?: number
     isProofVerified?: any
     token: string
     userAccount?: string
@@ -495,6 +497,7 @@ export class MobileAppConnect {
                                     account: data.event.accountName,
                                     permission: data?.event?.permission || 'active',
                                     keys: [],
+                                    isTemp: false,
                                     createData: {},
                                     token: '',
                                     proof: data.event.proof,

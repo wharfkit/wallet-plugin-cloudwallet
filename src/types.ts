@@ -18,9 +18,12 @@ export class Transfer extends Struct {
 
 interface WAXCloudWalletResponse {
     verified: boolean
+    whitelistedContracts: []
 }
 
 export interface WAXCloudWalletLoginResponse extends WAXCloudWalletResponse {
+    autoLogin: boolean
+    isTemp?: boolean
     pubKeys: PublicKeyType[]
     userAccount: NameType
     permission?: string
