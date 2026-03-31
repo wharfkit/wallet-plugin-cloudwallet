@@ -24,14 +24,15 @@ import {
     WalletPluginSignResponse,
 } from '@wharfkit/session'
 
-import {autoLogin, popupLogin} from './login'
-import {allowAutosign, autoSign, popupTransact} from './sign'
+import {popupLogin} from './login'
+import {popupTransact} from './sign'
 import {WAXCloudWalletLoginResponse, WAXCloudWalletSigningResponse} from './types'
 import {validateModifications} from './utils'
 import defaultTranslations from './translations'
 import {MobileAppConnect} from './MobileAppConnect'
 import {WalletPluginCloudWalletOptions} from './interfaces'
 import {isAndroid, isIos} from './helpers'
+import {version} from './version'
 
 export class WalletPluginCloudWallet extends AbstractWalletPlugin implements WalletPlugin {
     /**
@@ -55,7 +56,7 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
         // The blockchains this WalletPlugin supports
         supportedChains: [
             '1064487b3cd1a897ce03ae5b6a865651747e2e152090f99c1d19d44e01aea5a4', // WAX (Mainnet)
-            // 'f16b1833c747c43682f4386fca9cbb327929334a762755ebec17f6f23c9b8a12', // NYI - WAX (Testnet)
+            'f16b1833c747c43682f4386fca9cbb327929334a762755ebec17f6f23c9b8a12', // WAX (Testnet) - new wallet
         ],
     }
 
@@ -71,12 +72,10 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
     })
 
     /**
-     * WAX Cloud Wallet Configuration
+     * Cloud Wallet Configuration
      */
     public url = 'https://www.mycloudwallet.com'
-    public autoUrl = 'https://idm-api.mycloudwallet.com/v1/accounts/auto-accept'
     public loginTimeout = 300000 // 5 minutes
-    public allowTemp = false
     private mobileAppConnect: MobileAppConnect | null = null
     private options?: WalletPluginCloudWalletOptions
 
@@ -92,14 +91,8 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
         if (options?.url) {
             this.url = options.url
         }
-        if (options?.autoUrl) {
-            this.autoUrl = options.autoUrl
-        }
         if (options?.loginTimeout) {
             this.loginTimeout = options.loginTimeout
-        }
-        if (options?.allowTemp) {
-            this.allowTemp = options.allowTemp
         }
         if (options?.mobileAppConnectConfig) {
             this.mobileAppConnect = new MobileAppConnect(options.mobileAppConnectConfig)
@@ -157,26 +150,10 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
                                 throw new Error('A chain must be selected to login with.')
                             }
                             const user = await this.mobileAppConnect.directConnect(context)
-                            // handle proof
-                            const signature = (user as any)?.proof?.data?.signature
-                            const identityProof =
-                                signature &&
-                                IdentityProof.from({
-                                    chainId: ChainId.from(context?.chain?.id),
-                                    scope: Name.from(context.appName || ''),
-                                    expiration: TimePointSec.from(
-                                        new Date().getTime() / 1000 + 60 * 60
-                                    ),
-                                    signer: PermissionLevel.from({
-                                        actor: `${user?.account}`,
-                                        permission: user?.permission || 'active',
-                                    }),
-                                    signature: Signature.from(signature),
-                                })
-                            this.data.identityProof = identityProof
-                            this.data.proof = user?.proof
-                            this.data.isTempAccount = (user as any)?.isTemp
-                            this.data.whitelist = (user as any)?.whitelistedContracts
+                            let identityProof: IdentityProof | undefined = undefined
+                            if ((user as any)?.proof?.data?.signature) {
+                                identityProof = IdentityProof.from((user as any)?.proof.data as any)
+                            }
                             directConnectPromiseResolve({
                                 chain: context.chain.id,
                                 permissionLevel: PermissionLevel.from({
@@ -232,26 +209,18 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
 
         // Create common search parameters
         const searchParams = new URLSearchParams()
+        searchParams.set('v', version)
         const nonce = context.arbitrary['nonce']
         if (nonce) {
             const base64Nonce = btoa(nonce)
             searchParams.set('n', base64Nonce)
         }
-        searchParams.set('returnTemp', this.allowTemp.toString())
 
-        try {
-            // Attempt automatic login
-            const autoLoginUrl = new URL('/login', this.autoUrl)
-            autoLoginUrl.search = searchParams.toString()
+        // Fallback to popup login
+        const popupLoginUrl = new URL('/cloud-wallet/login', this.url)
+        popupLoginUrl.search = searchParams.toString()
 
-            response = await autoLogin(t, autoLoginUrl.toString())
-        } catch (e) {
-            // Fallback to popup login
-            const popupLoginUrl = new URL('/cloud-wallet/login', this.url)
-            popupLoginUrl.search = searchParams.toString()
-
-            response = await popupLogin(t, popupLoginUrl.toString())
-        }
+        response = await popupLogin(t, popupLoginUrl.toString())
 
         // If failed due to no response or no verified response, throw error
         if (!response) {
@@ -266,26 +235,10 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
             )
         }
 
-        // Save our whitelisted contracts
-        this.data.whitelist = response.whitelistedContracts
-        this.data.isTempAccount = response.isTemp
-        this.data.proof = (response as any)?.proof
-
-        console.log('waxLogin::response proof', (response as any)?.proof)
-        const signature = (response as any)?.proof?.data?.signature
-        const identityProof =
-            signature &&
-            IdentityProof.from({
-                chainId: ChainId.from(context?.chain?.id),
-                scope: Name.from(context.appName || ''),
-                expiration: TimePointSec.from(new Date().getTime() / 1000 + 60 * 60),
-                signer: PermissionLevel.from({
-                    actor: response.userAccount,
-                    permission: response.permission || 'active',
-                }),
-                signature: Signature.from((response as any)?.proof?.data?.signature),
-            })
-        this.data.identityProof = identityProof
+        let identityProof: IdentityProof | undefined = undefined
+        if ((response as any)?.proof?.data?.signature) {
+            identityProof = IdentityProof.from((response as any)?.proof.data as any)
+        }
         return new Promise((resolve) => {
             if (!context.chain) {
                 throw new Error('A chain must be selected to login with.')
@@ -302,6 +255,7 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
             })
         })
     }
+
     /**
      * Performs the wallet logic required to sign a transaction and return the signature.
      *
@@ -319,10 +273,8 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
             this.mobileAppConnect instanceof MobileAppConnect &&
             (connectedType === 'direct' || connectedType === 'remote')
         ) {
-            console.log('mobileSign')
             promise = this.mobileSign(resolved, context)
         } else {
-            console.log('waxSign')
             promise = this.waxSign(resolved, context)
         }
         return cancelable(promise, (canceled) => {
@@ -348,33 +300,32 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
         const expiration = resolved.transaction.expiration.toDate()
         const now = new Date()
         const timeout = Math.floor(expiration.getTime() - now.getTime())
-        console.log('timeout', timeout)
 
         let promptPromise: Cancelable<PromptResponse> = cancelable(
             new Promise(() => {
                 // Empty promise that never resolves
             })
         )
-        if (!allowAutosign(resolved, this.data)) {
-            // Tell Wharf we need to prompt the user with a countdown
-            promptPromise = context.ui.prompt({
-                title: 'Sign',
-                body: `Please complete the transaction using the Cloud Wallet app.`,
-                optional: true,
-                elements: [
-                    {
-                        type: 'countdown',
-                        data: expiration.toISOString(),
-                    },
-                ],
-            })
 
-            // Clear the timeout if the UI throws (which generally means it closed)
-            promptPromise.catch((error) => {
-                clearTimeout(timer)
-                mobileSignCancelReject(error)
-            })
-        }
+        // Tell Wharf we need to prompt the user with a countdown
+        promptPromise = context.ui.prompt({
+            title: 'Sign',
+            body: `Please complete the transaction using the Cloud Wallet app.`,
+            optional: true,
+            elements: [
+                {
+                    type: 'countdown',
+                    data: expiration.toISOString(),
+                },
+            ],
+        })
+
+        // Clear the timeout if the UI throws (which generally means it closed)
+        promptPromise.catch((error) => {
+            clearTimeout(timer)
+            mobileSignCancelReject(error)
+        })
+
         const timer = setTimeout(() => {
             if (!context.ui) {
                 throw new Error('No UI defined')
@@ -405,7 +356,7 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
         const now = new Date()
         const timeout = Math.floor(expiration.getTime() - now.getTime())
 
-        // Perform WAX Cloud Wallet signing
+        // Perform Cloud Wallet signing
         const callbackPromise = this.getWalletResponse(resolved, context, t, timeout)
 
         let promptPromise: Cancelable<PromptResponse> = cancelable(
@@ -413,23 +364,22 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
                 // Empty promise that never resolves
             })
         )
-        if (!allowAutosign(resolved, this.data)) {
-            // Tell Wharf we need to prompt the user with a countdown
-            promptPromise = context.ui.prompt({
-                title: 'Sign',
-                body: `Please complete the transaction using the Cloud Wallet popup window.`,
-                optional: true,
-                elements: [
-                    {
-                        type: 'countdown',
-                        data: expiration.toISOString(),
-                    },
-                ],
-            })
 
-            // Clear the timeout if the UI throws (which generally means it closed)
-            promptPromise.catch(() => clearTimeout(timer))
-        }
+        // Tell Wharf we need to prompt the user with a countdown
+        promptPromise = context.ui.prompt({
+            title: 'Sign',
+            body: `Please complete the transaction using the Cloud Wallet popup window.`,
+            optional: true,
+            elements: [
+                {
+                    type: 'countdown',
+                    data: expiration.toISOString(),
+                },
+            ],
+        })
+
+        // Clear the timeout if the UI throws (which generally means it closed)
+        promptPromise.catch(() => clearTimeout(timer))
 
         // Create a timer to test the external cancelation of the prompt, if defined
         const timer = setTimeout(() => {
@@ -454,9 +404,9 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
                 signatures: callbackResponse.signatures,
             }
 
-            // If a transaction was returned by the WCW
+            // If a transaction was returned by the Cloud Wallet
             if (callbackResponse.serializedTransaction) {
-                // Convert the serialized transaction from the WCW to a Transaction object
+                // Convert the serialized transaction from the Cloud Wallet to a Transaction object
                 const responseTransaction = Serializer.decode({
                     data: callbackResponse.serializedTransaction,
                     type: Transaction,
@@ -501,29 +451,7 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
             throw new Error('The Cloud Wallet requires a UI to sign transactions.')
         }
 
-        // Check if automatic signing is allowed
-        if (allowAutosign(resolved, this.data)) {
-            try {
-                // Try automatic signing
-                response = await autoSign(t, `${this.autoUrl}/signing`, resolved)
-            } catch (e) {
-                // Fallback to poup signing
-                response = await popupTransact(
-                    t,
-                    `${this.url}/cloud-wallet/signing/`,
-                    resolved,
-                    timeout
-                )
-            }
-        } else {
-            // If automatic is not allowed use the popup
-            response = await popupTransact(
-                t,
-                `${this.url}/cloud-wallet/signing/`,
-                resolved,
-                timeout
-            )
-        }
+        response = await popupTransact(t, `${this.url}/cloud-wallet/signing/`, resolved, timeout)
 
         // Catch unknown errors where no response is returned
         if (!response) {
@@ -538,9 +466,6 @@ export class WalletPluginCloudWallet extends AbstractWalletPlugin implements Wal
                 })
             )
         }
-
-        // Save our whitelisted contracts
-        this.data.whitelist = response.whitelistedContracts
 
         // Return the response from the API
         return response
