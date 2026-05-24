@@ -1,6 +1,6 @@
 # @wharfkit/wallet-plugin-cloudwallet
 
-A Session Kit wallet plugin for the [CloudWallet](https://mycloudwallet.com).
+A Session Kit wallet plugin for [My Cloud Wallet](https://www.mycloudwallet.com).
 
 ## Usage
 
@@ -16,6 +16,8 @@ const kit = new SessionKit({
     walletPlugins: [new WalletPluginCloudWallet()],
 })
 ```
+
+### Local Development
 
 If you need to modify the URL being used, which chains are supported, or alter the timeout, you can specify one or more of these paramaters during plugin initialization.  
 These overrides are intended for local development and are not required for regular use.
