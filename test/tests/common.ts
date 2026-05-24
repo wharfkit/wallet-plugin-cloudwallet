@@ -19,6 +19,18 @@ const mockSessionKitOptions = {
 }
 
 suite('wallet plugin', function () {
+    test('accepts deprecated mobile app connect config', function () {
+        const plugin = new WalletPluginCloudWallet({
+            mobileAppConnectConfig: {
+                dappInfo: {
+                    name: 'compat-test',
+                },
+            },
+        })
+
+        assert.instanceOf(plugin, WalletPluginCloudWallet)
+    })
+
     // TODO: Reimplement tests where it doesn't require a `window`
     // test('login and sign', async function () {
     //     const kit = new SessionKit(mockSessionKitOptions)
