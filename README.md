@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This package lives in the WharfKit monorepo at [wharfkit/js/packages/wallet-plugin-cloudwallet](https://github.com/wharfkit/js/tree/dev/packages/wallet-plugin-cloudwallet), and this repository is archived. Open new issues and pull requests on [wharfkit/js](https://github.com/wharfkit/js).
+
 # @wharfkit/wallet-plugin-cloudwallet
 
 A Session Kit wallet plugin for [My Cloud Wallet](https://www.mycloudwallet.com).
